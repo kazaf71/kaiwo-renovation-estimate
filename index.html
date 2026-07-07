@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>楷沃裝修工程｜室內裝修線上估價表</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Noto Sans TC', 'system-ui', 'sans-serif']
+          },
+          colors: {
+            cream: '#f8f0e4',
+            creamSoft: '#fffaf2',
+            wood: '#d7b894',
+            coffee: '#5f432f',
+            cocoa: '#8c684d',
+            sage: '#6e765f'
+          }
+        }
+      }
+    };
+  </script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-cream text-stone-900">
+  <script type="application/json" id="pricing-data">
+    {
+      "brand": {
+        "name": "楷沃裝修工程",
+        "positioning": "3D設計 × 工程規劃 × 統包整合",
+        "serviceArea": "台北・新北・桃園",
+        "line": "@416ukqvs",
+        "phone": "0968-820-326"
+      },
+      "areas": [
+        "玄關",
+        "客廳",
+        "餐廳",
+        "廚房",
+        "書房",
+        "更衣室",
+        "主臥室",
+        "次臥室1",
+        "次臥室2",
+        "廁所／浴室",
+        "陽台",
+        "走道／儲藏區"
+      ],
+      "cabinetTypes": [
+        { "id": "lowA", "name": "矮櫃A", "height": "60～90cm", "low": 4500, "high": 5500 },
+        { "id": "lowB", "name": "矮櫃B", "height": "90～120cm", "low": 4900, "high": 6100 },
+        { "id": "middle", "name": "中櫃", "height": "120～180cm", "low": 5700, "high": 6600 },
+        { "id": "tall", "name": "高櫃", "height": "180～240cm", "low": 7300, "high": 8500 },
+        { "id": "extraTall", "name": "加高櫃", "height": "240～280cm", "low": 8800, "high": 10500 },
+        { "id": "display", "name": "開放展示櫃", "height": "180～210cm", "low": 6500, "high": 7100 },
+        { "id": "furniture", "name": "電視櫃／書桌／臥榻／妝台／床頭櫃", "height": "依設計", "low": 4300, "high": 4850 },
+        { "id": "shoe", "name": "鞋櫃", "height": "210～240cm", "low": 7300, "high": 8500 }
+      ],
+      "woodworkItems": [
+        { "id": "flatCeiling", "name": "平釘天花板", "unit": "坪", "low": 3400, "high": 3800 },
+        { "id": "indirectLight", "name": "間接照明", "unit": "尺", "low": 450, "high": 550 },
+        { "id": "beamColumn", "name": "木作包樑柱", "unit": "尺", "low": 550, "high": 800 },
+        { "id": "curtainBox", "name": "冷氣／窗簾盒", "unit": "尺", "low": 750, "high": 950 },
+        { "id": "singleBoard", "name": "木作單面封板", "unit": "尺", "low": 1300, "high": 1500 },
+        { "id": "doublePartition", "name": "木作雙面隔間", "unit": "尺", "low": 1550, "high": 1800 },
+        { "id": "vent", "name": "側吹／下吹出風口", "unit": "尺", "low": 1000, "high": 1250 },
+        { "id": "armLightBox", "name": "ARM方形燈盒", "unit": "式", "low": 550, "high": 650 },
+        { "id": "accessPanel", "name": "一般維修孔", "unit": "式", "low": 1000, "high": 1500 },
+        { "id": "hiddenAccessPanel", "name": "吊隱式維修孔", "unit": "式", "low": 3800, "high": 5000 },
+        { "id": "acCover", "name": "冷氣個蓋", "unit": "式", "low": 2500, "high": 3500 },
+        { "id": "polyDoor", "name": "自選波麗板門組", "unit": "樘", "low": 19000, "high": 22500 },
+        { "id": "veneerDoor", "name": "實木皮板門組，未塗裝", "unit": "樘", "low": 24500, "high": 26500 },
+        { "id": "hiddenDoor", "name": "隱藏門組", "unit": "樘", "low": 19500, "high": 23000 }
+      ],
+      "flooring": [
+        { "id": "basic", "name": "基礎款", "low": 3000, "high": 3000 },
+        { "id": "middle", "name": "中階款", "low": 5000, "high": 5000 },
+        { "id": "premium", "name": "高階款", "low": 8000, "high": 8000 }
+      ],
+      "plumbingElectric": {
+        "新成屋": { "low": 4000, "high": 6000 },
+        "中古屋": { "low": 6000, "high": 9000 }
+      },
+      "painting": {
+        "新成屋": { "low": 2000, "high": 2800 },
+        "中古屋": { "low": 2400, "high": 3400 }
+      },
+      "plumbingExtraItems": [
+        { "id": "power-xlpe-22", "name": "22平方 XLPE電源線", "unit": "式", "low": 25000, "high": 30000 },
+        { "id": "power-xlpe-38", "name": "38平方 XLPE電源線", "unit": "式", "low": 41000, "high": 47000 },
+        { "id": "power-front", "name": "動力表前箱（電表動力箱）", "unit": "式", "low": 8500, "high": 9800 },
+        { "id": "power-indoor-2p", "name": "動力室內電箱2P（土林電機）", "unit": "式", "low": 15500, "high": 17500 },
+        { "id": "power-indoor-32p", "name": "動力室內電箱32P（土林電機）", "unit": "式", "low": 17000, "high": 20000 },
+        { "id": "power-cable", "name": "動力箱杓搭、含無熔絲開關", "unit": "式", "low": 3700, "high": 4500 },
+        { "id": "power-outlet", "name": "重型插座申請", "unit": "式", "low": 3000, "high": 3600 },
+        { "id": "power-ground", "name": "動力電箱接地線", "unit": "式", "low": 6000, "high": 7300 },
+        { "id": "socket-ac", "name": "AC冷氣專用迴路", "unit": "迴", "low": 3200, "high": 3900 },
+        { "id": "socket-220v", "name": "冰箱220V專用迴路", "unit": "迴", "low": 3200, "high": 3900 },
+        { "id": "socket-110v", "name": "電盤110V專用迴路", "unit": "迴", "low": 3200, "high": 3900 },
+        { "id": "socket-room-110v", "name": "房間110V專用迴路", "unit": "迴", "low": 3200, "high": 3900 },
+        { "id": "socket-washer", "name": "農濕110V專用迴路", "unit": "迴", "low": 2700, "high": 3300 },
+        { "id": "socket客廳", "name": "客廳插座", "unit": "迴", "low": 2700, "high": 3300 },
+        { "id": "socket主臥", "name": "主臥插座", "unit": "迴", "low": 2700, "high": 3300 },
+        { "id": "socket小孩房", "name": "小孩房插座", "unit": "迴", "low": 2700, "high": 3300 },
+        { "id": "socket充電", "name": "充電頂洗衣機插座", "unit": "迴", "low": 2700, "high": 3300 },
+        { "id": "socket浴室", "name": "浴室插座", "unit": "迴", "low": 2700, "high": 3300 },
+        { "id": "switch-single", "name": "燈控（單切）", "unit": "切", "low": 1250, "high": 1550 },
+        { "id": "switch-double", "name": "燈控（雙切）", "unit": "組", "low": 2150, "high": 2750 },
+        { "id": "switch-bathfan", "name": "廁所抽風機（燈控）", "unit": "切", "low": 1250, "high": 1550 },
+        { "id": "switch-doorbell", "name": "對講機與門口電鈴", "unit": "口", "low": 850, "high": 1200 },
+        { "id": "switch-internet", "name": "網路配線", "unit": "口", "low": 850, "high": 1200 },
+        { "id": "switch-emt", "name": "EMT明管", "unit": "口", "low": 850, "high": 1200 },
+        { "id": "weakphone", "name": "電話弱電配線", "unit": "組", "low": 2300, "high": 2700 },
+        { "id": "weak-tv", "name": "電視TV弱電配線", "unit": "組", "low": 2300, "high": 2700 },
+        { "id": "weak-net", "name": "網路弱電配線", "unit": "組", "low": 2300, "high": 2700 },
+        { "id": "water-main-pvc", "name": "冷水主管（PVC）", "unit": "樓層", "low": 6800, "high": 8500 },
+        { "id": "water-main-34", "name": "室內幹管3/4", "unit": "式", "low": 5700, "high": 7500 },
+        { "id": "water-branch-12", "name": "室內分支出口1/2", "unit": "式", "low": 2800, "high": 3700 },
+        { "id": "water-hot-34", "name": "熱水分支出口3/4", "unit": "口", "low": 5000, "high": 6000 },
+        { "id": "water-hot-12", "name": "熱水分支出口1/2", "unit": "口", "low": 4100, "high": 4950 },
+        { "id": "drain-sink", "name": "洗手排水管", "unit": "式", "low": 6000, "high": 8500 },
+        { "id": "drain-floor", "name": "合一地排／3吋出口", "unit": "口", "low": 2900, "high": 3600 },
+        { "id": "drain-washing", "name": "洗衣機用", "unit": "口", "low": 2550, "high": 3500 },
+        { "id": "toilet-toto-cw887", "name": "TOTO CW887CRT馬桶", "unit": "組", "low": 1000, "high": 1000 },
+        { "id": "toilet-toto-cw320", "name": "TOTO TC400CVRJ1馬桶", "unit": "組", "low": 1950, "high": 1950 },
+        { "id": "bathroom-led", "name": "衛浴 LED燈具", "unit": "組", "low": 500, "high": 700 },
+        { "id": "bathroom-towel", "name": "毛巾架", "unit": "支", "low": 600, "high": 750 },
+        { "id": "bathroom-mirror", "name": "浴室不鏽鋼排水槽", "unit": "組", "low": 8100, "high": 11000 }
+      ],
+      "paintingExtraItems": [
+        { "id": "new-wall-cement", "name": "新作面刷水泥漆-矽酸鈣板或水泥粉刷牆面（全批土）", "unit": "坪", "low": 1400, "high": 1800 },
+        { "id": "old-wall-cement", "name": "舊作面刷水泥漆（全批土修補）", "unit": "坪", "low": 1000, "high": 1350 },
+        { "id": "new-wall-latex", "name": "新作面刷乳膠漆-矽酸鈣板或水泥粉刷牆面（全批土）", "unit": "坪", "low": 2000, "high": 2550 },
+        { "id": "old-wall-latex", "name": "舊作面刷乳膠漆（全批土修補）", "unit": "坪", "low": 1550, "high": 1900 },
+        { "id": "new-wall-rainbow", "name": "新作面刷立邦漆-矽酸鈣板或水泥粉刷牆面（全批土）", "unit": "坪", "low": 2400, "high": 3000 },
+        { "id": "old-wall-rainbow", "name": "舊作面刷立邦漆（全批土修補）", "unit": "坪", "low": 1950, "high": 2300 },
+        { "id": "wood-clear-door", "name": "門框木皮噴透明漆", "unit": "樘", "low": 1500, "high": 2000 },
+        { "id": "wood-clear-single", "name": "門片木皮噴透明漆", "unit": "片", "low": 2200, "high": 2750 },
+        { "id": "wood-clear-small", "name": "木作櫃木皮噴透明漆-120公分以下矮櫃", "unit": "臺尺", "low": 550, "high": 750 },
+        { "id": "wood-clear-tall", "name": "木作櫃木皮噴透明漆-超過120公分木櫃", "unit": "臺尺", "low": 850, "high": 1250 },
+        { "id": "paint-protection", "name": "噴漆保護含冷烤", "unit": "才", "low": 200, "high": 300 },
+        { "id": "paint-touchup", "name": "個別修補", "unit": "坪", "low": 300, "high": 300 }
+      ],
+      "masonryItems": [
+        { "id": "tile-demo", "name": "地壁磚拆除清運", "unit": "坪", "low": 2500, "high": 3800 },
+        { "id": "floor-leveling", "name": "地坪水泥砂漿整平", "unit": "坪", "low": 1800, "high": 2600 },
+        { "id": "waterproof", "name": "浴室／陽台防水工程", "unit": "坪", "low": 3500, "high": 5200 },
+        { "id": "bath-tile", "name": "浴室牆地磚鋪貼", "unit": "坪", "low": 6500, "high": 9500 },
+        { "id": "kitchen-tile", "name": "廚房壁磚鋪貼", "unit": "坪", "low": 5200, "high": 7800 },
+        { "id": "door-sill", "name": "門檻石安裝", "unit": "式", "low": 3500, "high": 6500 },
+        { "id": "drain-slope", "name": "排水洩水坡度調整", "unit": "式", "low": 6000, "high": 12000 }
+      ],
+      "design3d": {
+        "unit": "坪",
+        "lowPerPing": 2500,
+        "highPerPing": 3500,
+        "minimumLow": 30000,
+        "minimumHigh": 45000
+      }
+    }
+  </script>
+
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="vendor/jszip.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script type="text/babel" src="app.jsx"></script>
+</body>
+</html>
