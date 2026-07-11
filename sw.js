@@ -1,4 +1,4 @@
-const CACHE_NAME = "kaiwo-estimate-v1";
+const CACHE_NAME = "kaiwo-estimate-v2";
 const APP_SHELL = [
   "/",
   "/index.html",

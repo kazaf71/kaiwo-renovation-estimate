@@ -102,14 +102,17 @@ function App() {
   const [woodRows, setWoodRows] = React.useState([]);
   const [plumbingNeeded, setPlumbingNeeded] = React.useState(false);
   const [paintingNeeded, setPaintingNeeded] = React.useState(false);
+  const [airConditioningNeeded, setAirConditioningNeeded] = React.useState(false);
   const [plumbingExtras, setPlumbingExtras] = React.useState([]);
   const [paintingExtras, setPaintingExtras] = React.useState([]);
+  const [airConditioningRows, setAirConditioningRows] = React.useState([]);
   const [masonryRows, setMasonryRows] = React.useState([]);
 
   const cabinetTypeMap = React.useMemo(() => Object.fromEntries(pricing.cabinetTypes.map((item) => [item.id, item])), []);
   const woodItemMap = React.useMemo(() => Object.fromEntries(pricing.woodworkItems.map((item) => [item.id, item])), []);
   const plumbingItemMap = React.useMemo(() => Object.fromEntries(pricing.plumbingExtraItems.map((item) => [item.id, item])), []);
   const paintingItemMap = React.useMemo(() => Object.fromEntries(pricing.paintingExtraItems.map((item) => [item.id, item])), []);
+  const airConditioningItemMap = React.useMemo(() => Object.fromEntries(pricing.airConditioningItems.map((item) => [item.id, item])), []);
   const masonryItemMap = React.useMemo(() => Object.fromEntries(pricing.masonryItems.map((item) => [item.id, item])), []);
   const floorItem = pricing.flooring.find((item) => item.id === floorGrade) || pricing.flooring[0];
   const [plumbingBaseLow, setPlumbingBaseLow] = React.useState(pricing.plumbingElectric["新成屋"].low);
@@ -160,6 +163,11 @@ function App() {
     item: paintingItemMap[row.itemId] || pricing.paintingExtraItems[0],
     subtotal: paintingNeeded ? pricedPair(row.qty, row.low, row.high, row.fixed) : pair()
   }));
+  const airConditioningTotals = airConditioningRows.map((row) => ({
+    ...row,
+    item: airConditioningItemMap[row.itemId] || pricing.airConditioningItems[0],
+    subtotal: airConditioningNeeded ? pricedPair(row.qty, row.low, row.high, row.fixed) : pair()
+  }));
   const masonryTotals = masonryRows.map((row) => ({
     ...row,
     item: masonryItemMap[row.itemId] || pricing.masonryItems[0],
@@ -169,12 +177,13 @@ function App() {
   }));
   const plumbingExtraTotal = plumbingExtraTotals.reduce((sum, row) => addPair(sum, row.subtotal), pair());
   const paintingExtraTotal = paintingExtraTotals.reduce((sum, row) => addPair(sum, row.subtotal), pair());
+  const airConditioningTotal = airConditioningTotals.reduce((sum, row) => addPair(sum, row.subtotal), pair());
   const masonryTotal = masonryTotals.reduce((sum, row) => addPair(sum, row.subtotal), pair());
   const protectionTotal = protectionNeeded ? pricedPair(protectionQty, protectionLow, protectionHigh, protectionFixed) : pair();
   const cleanupTotal = cleanupNeeded ? pricedPair(cleanupQty, cleanupLow, cleanupHigh, cleanupFixed) : pair();
   const plumbingTotal = addPair(plumbingBaseTotal, plumbingExtraTotal);
   const paintingTotal = addPair(paintingBaseTotal, paintingExtraTotal);
-  const grandTotal = [cabinetTotal, woodTotal, flooringTotal, masonryTotal, protectionTotal, cleanupTotal, plumbingTotal, paintingTotal].reduce(addPair, pair());
+  const grandTotal = [cabinetTotal, woodTotal, flooringTotal, masonryTotal, protectionTotal, cleanupTotal, plumbingTotal, paintingTotal, airConditioningTotal].reduce(addPair, pair());
   const invoiceTotal = invoiceNeeded ? pair(grandTotal.low * 0.05, grandTotal.high * 0.05) : pair();
   const managementRate = Number(managementPercent || 0) / 100;
   const managementTotal = managementRate > 0 ? pair(grandTotal.low * managementRate, grandTotal.high * managementRate) : pair();
@@ -232,6 +241,11 @@ function App() {
     setShowResult(false);
   };
 
+  const updateAirConditioning = (id, patch) => {
+    setAirConditioningRows((rows) => rows.map((row) => (row.id === id ? { ...row, ...patch } : row)));
+    setShowResult(false);
+  };
+
   const updateMasonry = (id, patch) => {
     setMasonryRows((rows) => rows.map((row) => (row.id === id ? { ...row, ...patch } : row)));
     setShowResult(false);
@@ -245,6 +259,11 @@ function App() {
   const updatePaintingItem = (id, itemId) => {
     const item = paintingItemMap[itemId] || pricing.paintingExtraItems[0];
     updatePaintingExtra(id, { itemId, low: item.low, high: item.high, fixed: "" });
+  };
+
+  const updateAirConditioningItem = (id, itemId) => {
+    const item = airConditioningItemMap[itemId] || pricing.airConditioningItems[0];
+    updateAirConditioning(id, { itemId, low: item.low, high: item.high, fixed: "" });
   };
 
   const updateMasonryItem = (id, itemId) => {
@@ -276,6 +295,12 @@ function App() {
   const addPaintingExtra = () => {
     const item = pricing.paintingExtraItems[0];
     setPaintingExtras((rows) => [...rows, { id: crypto.randomUUID(), area: selectedAreas[0] || "客廳", itemId: item.id, qty: 1, low: item.low, high: item.high, fixed: "" }]);
+    setShowResult(false);
+  };
+
+  const addAirConditioning = () => {
+    const item = pricing.airConditioningItems[0];
+    setAirConditioningRows((rows) => [...rows, { id: crypto.randomUUID(), area: selectedAreas[0] || "客廳", itemId: item.id, qty: 1, low: item.low, high: item.high, fixed: "" }]);
     setShowResult(false);
   };
 
@@ -311,6 +336,8 @@ function App() {
       ...plumbingExtraTotals.filter(() => plumbingNeeded).map((row) => `  - ${row.area}｜${row.item.name} × ${row.qty}${row.item.unit}：NT$ ${moneyRange(row.subtotal)}`),
       `油漆工程：${paintingNeeded ? `NT$ ${moneyRange(paintingTotal)}（基礎 ${moneyRange(paintingBaseTotal)}，加價 ${moneyRange(paintingExtraTotal)}）` : "未勾選，不列入估價"}`,
       ...paintingExtraTotals.filter(() => paintingNeeded).map((row) => `  - ${row.area}｜${row.item.name} × ${row.qty}${row.item.unit}：NT$ ${moneyRange(row.subtotal)}`),
+      `空調工程：${airConditioningNeeded ? `NT$ ${moneyRange(airConditioningTotal)}` : "未勾選，不列入估價"}`,
+      ...airConditioningTotals.filter(() => airConditioningNeeded).map((row) => `  - ${row.area}｜${row.item.name} × ${row.qty}${row.item.unit}：NT$ ${moneyRange(row.subtotal)}`),
       ``,
       `稅前工程總額：NT$ ${moneyRange(grandTotal)}`,
       `監管費${managementRate > 0 ? `（${managementPercent}%）` : ""}：NT$ ${moneyRange(managementTotal)}`,
@@ -320,7 +347,7 @@ function App() {
       `免責說明：此為線上初估金額，實際報價仍需依現場丈量、材質選擇、施工條件與圖面內容為準。`
     ];
     return lines.join("\n");
-  }, [roomType, ping, condition, selectedAreas, cabinetTotal, woodTotal, floorNeeded, flooringTotal, masonryNeeded, masonryTotal, masonryTotals, protectionNeeded, protectionTotal, protectionQty, protectionUnit, protectionLow, protectionHigh, cleanupNeeded, cleanupTotal, cleanupQty, cleanupUnit, cleanupLow, cleanupHigh, plumbingNeeded, plumbingBaseTotal, plumbingExtraTotal, plumbingTotal, plumbingExtraTotals, paintingNeeded, paintingBaseTotal, paintingExtraTotal, paintingTotal, paintingExtraTotals, grandTotal, managementRate, managementPercent, managementTotal, invoiceNeeded, invoiceTotal, finalTotal]);
+  }, [roomType, ping, condition, selectedAreas, cabinetTotal, woodTotal, floorNeeded, flooringTotal, masonryNeeded, masonryTotal, masonryTotals, protectionNeeded, protectionTotal, protectionQty, protectionUnit, protectionLow, protectionHigh, cleanupNeeded, cleanupTotal, cleanupQty, cleanupUnit, cleanupLow, cleanupHigh, plumbingNeeded, plumbingBaseTotal, plumbingExtraTotal, plumbingTotal, plumbingExtraTotals, paintingNeeded, paintingBaseTotal, paintingExtraTotal, paintingTotal, paintingExtraTotals, airConditioningNeeded, airConditioningTotal, airConditioningTotals, grandTotal, managementRate, managementPercent, managementTotal, invoiceNeeded, invoiceTotal, finalTotal]);
 
   const estimateRows = [
     ...cabinetTotals.map((row) => ({
@@ -412,10 +439,19 @@ function App() {
       unit: row.item.unit,
       unitPrice: unitPriceText(row.low, row.high, row.fixed),
       subtotal: row.subtotal
+    })) : []),
+    ...(airConditioningNeeded ? airConditioningTotals.map((row) => ({
+      trade: "空調工程",
+      area: row.area,
+      name: row.item.name,
+      qty: row.qty,
+      unit: row.item.unit,
+      unitPrice: unitPriceText(row.low, row.high, row.fixed),
+      subtotal: row.subtotal
     })) : [])
   ];
 
-  const tradeOrder = ["櫃體工程", "木作工程", "地板工程", "土水工程", "保護工程", "清運廢棄物工程", "水電工程", "油漆工程"];
+  const tradeOrder = ["櫃體工程", "木作工程", "地板工程", "土水工程", "保護工程", "清運廢棄物工程", "水電工程", "油漆工程", "空調工程"];
   const estimateGroups = tradeOrder
     .map((trade) => {
       const rows = estimateRows.filter((row) => row.trade === trade);
@@ -1198,6 +1234,60 @@ function App() {
               </div>
             </div>
           </Card>
+
+          <Card title="空調工程估價" defaultOpen={false}>
+            <div className="grid gap-4">
+              <label className="flex items-center gap-3 rounded-lg border border-coffee/20 bg-white px-3 py-3">
+                <input type="checkbox" checked={airConditioningNeeded} onChange={(e) => { setAirConditioningNeeded(e.target.checked); setShowResult(false); }} />
+                <span>
+                  <b className="block text-stone-700">需要空調工程</b>
+                  <span className="text-xs text-stone-500">未勾選則空調費用不列入總價，可自由新增空調項目與單價</span>
+                </span>
+              </label>
+
+              <div className="rounded-lg bg-white p-4 text-sm leading-7 text-stone-700">
+                <div>空調工程小計：<b>NT$ {moneyRange(airConditioningTotal)}</b></div>
+              </div>
+
+              <div className="grid gap-3">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <h3 className="text-lg font-black text-coffee">空調項目</h3>
+                  <button className="rounded-lg border border-coffee/20 bg-wood/25 px-4 py-2 text-sm font-black text-coffee disabled:opacity-50" type="button" disabled={!airConditioningNeeded} onClick={addAirConditioning}>新增空調項目</button>
+                </div>
+
+                {airConditioningTotals.map((row) => (
+                  <div key={row.id} className={`rounded-lg border border-coffee/10 bg-white p-4 ${airConditioningNeeded ? "" : "opacity-60"}`}>
+                    <div className="grid gap-3 md:grid-cols-[130px_1fr_90px_120px_120px_120px_auto] md:items-end">
+                      <Field label="區域">
+                        <select className="rounded-lg border border-coffee/20 px-3 py-2" value={row.area} disabled={!airConditioningNeeded} onChange={(e) => updateAirConditioning(row.id, { area: e.target.value })}>
+                          {(selectedAreas.length ? selectedAreas : pricing.areas).map((area) => <option key={area}>{area}</option>)}
+                        </select>
+                      </Field>
+                      <Field label="空調項目">
+                        <select className="rounded-lg border border-coffee/20 px-3 py-2" value={row.itemId} disabled={!airConditioningNeeded} onChange={(e) => updateAirConditioningItem(row.id, e.target.value)}>
+                          {pricing.airConditioningItems.map((item) => <option key={item.id} value={item.id}>{item.name}｜{money(item.low)}-{money(item.high)}元／{item.unit}</option>)}
+                        </select>
+                      </Field>
+                      <Field label={`數量（${row.item.unit}）`}>
+                        <input className={numberInputClass} type="number" min="0" value={row.qty} disabled={!airConditioningNeeded} onChange={(e) => updateAirConditioning(row.id, { qty: Number(e.target.value) })} />
+                      </Field>
+                      <Field label="低標單價">
+                        <input className={numberInputClass} type="number" min="0" value={row.low} disabled={!airConditioningNeeded} onChange={(e) => updateAirConditioning(row.id, { low: Number(e.target.value) })} />
+                      </Field>
+                      <Field label="高標單價">
+                        <input className={numberInputClass} type="number" min="0" value={row.high} disabled={!airConditioningNeeded} onChange={(e) => updateAirConditioning(row.id, { high: Number(e.target.value) })} />
+                      </Field>
+                      <Field label="固定單價">
+                        <input className={numberInputClass} type="number" min="0" value={row.fixed} placeholder="選填" disabled={!airConditioningNeeded} onChange={(e) => updateAirConditioning(row.id, { fixed: e.target.value })} />
+                      </Field>
+                      <button className="rounded-lg border border-red-200 px-3 py-2 text-sm font-bold text-red-700 disabled:opacity-50" type="button" disabled={!airConditioningNeeded} onClick={() => setAirConditioningRows((rows) => rows.filter((item) => item.id !== row.id))}>刪除</button>
+                    </div>
+                    <div className="mt-3 rounded-lg bg-cream px-3 py-3 text-sm text-stone-700">小計：<b>NT$ {moneyRange(row.subtotal)}</b></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Card>
         </section>
 
         <aside className="2xl:sticky 2xl:top-4">
@@ -1225,6 +1315,7 @@ function App() {
               <SummaryLine label="清運廢棄物" range={cleanupTotal} />
               <SummaryLine label="水電工程" range={plumbingTotal} />
               <SummaryLine label="油漆工程" range={paintingTotal} />
+              <SummaryLine label="空調工程" range={airConditioningTotal} />
               <SummaryLine label="稅前工程總額" range={grandTotal} />
               <SummaryLine label="監管費" range={managementTotal} />
               <SummaryLine label="發票稅金" range={invoiceTotal} />
