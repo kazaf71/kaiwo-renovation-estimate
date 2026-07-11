@@ -1,0 +1,29 @@
+{
+  "name": "楷沃裝修工程｜室內裝修估價",
+  "short_name": "楷沃估價",
+  "description": "楷沃裝修工程室內裝修線上估價工具，可建立預算初估、報價摘要與 ODS / Excel 估價單。",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fffaf2",
+  "theme_color": "#5f432f",
+  "categories": ["business", "productivity", "utilities"],
+  "lang": "zh-Hant-TW",
+  "icons": [
+    {
+      "src": "icons/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "開始估價",
+      "short_name": "估價",
+      "url": "/",
+      "description": "開啟楷沃裝修工程估價工具"
+    }
+  ]
+}

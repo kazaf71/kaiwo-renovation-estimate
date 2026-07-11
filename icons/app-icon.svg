@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">楷沃估價 App</title>
+  <rect width="512" height="512" rx="112" fill="#fffaf2"/>
+  <rect x="42" y="42" width="428" height="428" rx="92" fill="#5f432f"/>
+  <path d="M136 174h240v28H136zm0 68h240v28H136zm0 68h156v28H136z" fill="#d7b894"/>
+  <circle cx="356" cy="324" r="42" fill="#fffaf2"/>
+  <path d="M337 324l13 13 27-31" fill="none" stroke="#5f432f" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="256" y="133" text-anchor="middle" font-family="Microsoft JhengHei, Arial, sans-serif" font-size="58" font-weight="900" fill="#fffaf2">楷沃</text>
+</svg>

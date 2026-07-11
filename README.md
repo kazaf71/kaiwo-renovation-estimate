@@ -9,6 +9,7 @@
 - 固定單價可覆蓋低標／高標區間
 - 可產生客戶報價摘要
 - 可下載 ODS / Excel 估價單
+- 可安裝為 PWA App，支援手機加入主畫面與桌面安裝
 
 ## Netlify 部署
 
@@ -16,4 +17,3 @@
 
 - Build command：留空
 - Publish directory：留空或填 `.`
-
