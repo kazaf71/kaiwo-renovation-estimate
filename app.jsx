@@ -15,6 +15,7 @@ const numberInputClass = "w-24 rounded-md border border-coffee/20 px-2.5 py-2 te
 const numberInputWideClass = "w-28 rounded-md border border-coffee/20 px-2.5 py-2 text-sm";
 const numberInputPanelClass = "w-24 rounded-md border border-coffee/20 bg-white px-2.5 py-2 text-sm disabled:bg-stone-100 disabled:text-stone-400";
 const textInputClass = "rounded-md border border-coffee/20 px-2.5 py-2 text-sm";
+const fullTextInputClass = "w-full rounded-lg border border-coffee/20 bg-white px-3 py-2 text-sm";
 
 const toFeet = (cm) => Number(cm || 0) / 30.3;
 
@@ -32,6 +33,29 @@ const pricedPair = (qty, low, high, fixed = "") => {
 };
 
 const unitPriceText = (low, high, fixed = "") => moneyRange(pricedPair(1, low, high, fixed));
+
+const referenceText = (item, fallbackUnit = "") => {
+  if (!item) return "";
+  const unit = item.unit || fallbackUnit;
+  const price = moneyRange(pair(item.low, item.high));
+  return `${item.name}｜${price}${unit ? `／${unit}` : ""}`;
+};
+
+const itemDisplayName = (item, fallback = "") => item?.name || fallback;
+
+const rowText = (row, item, fallback = "") => row.customText || itemDisplayName(item, row.name || fallback);
+
+const actualUnitPriceText = (value) => {
+  const number = fixedNumber(value);
+  return number === null ? "未填" : `${money(number)}元`;
+};
+
+const actualPricedPair = (qty, actualUnitPrice) => {
+  const price = fixedNumber(actualUnitPrice);
+  const amount = Number(qty || 0);
+  if (price === null) return pair();
+  return pair(amount * price, amount * price);
+};
 
 function pair(low = 0, high = 0) {
   return { low, high };
@@ -76,24 +100,34 @@ function App() {
   const [condition, setCondition] = React.useState("新成屋");
   const [selectedAreas, setSelectedAreas] = React.useState([]);
   const [floorNeeded, setFloorNeeded] = React.useState(false);
+  const [floorArea, setFloorArea] = React.useState("全室");
   const [floorGrade, setFloorGrade] = React.useState("middle");
   const [floorPing, setFloorPing] = React.useState(18);
   const [floorLow, setFloorLow] = React.useState(5000);
   const [floorHigh, setFloorHigh] = React.useState(5000);
   const [floorFixed, setFloorFixed] = React.useState("");
+  const [floorText, setFloorText] = React.useState("中階地板");
+  const [floorUnit, setFloorUnit] = React.useState("坪");
+  const [floorActualUnitPrice, setFloorActualUnitPrice] = React.useState("");
   const [masonryNeeded, setMasonryNeeded] = React.useState(false);
   const [protectionNeeded, setProtectionNeeded] = React.useState(false);
+  const [protectionArea, setProtectionArea] = React.useState("全室");
+  const [protectionText, setProtectionText] = React.useState("保護工程");
   const [protectionQty, setProtectionQty] = React.useState(1);
   const [protectionUnit, setProtectionUnit] = React.useState("式");
   const [protectionLow, setProtectionLow] = React.useState(8000);
   const [protectionHigh, setProtectionHigh] = React.useState(15000);
   const [protectionFixed, setProtectionFixed] = React.useState("");
+  const [protectionActualUnitPrice, setProtectionActualUnitPrice] = React.useState("");
   const [cleanupNeeded, setCleanupNeeded] = React.useState(false);
+  const [cleanupArea, setCleanupArea] = React.useState("全室");
+  const [cleanupText, setCleanupText] = React.useState("清運廢棄物工程");
   const [cleanupQty, setCleanupQty] = React.useState(1);
   const [cleanupUnit, setCleanupUnit] = React.useState("式");
   const [cleanupLow, setCleanupLow] = React.useState(12000);
   const [cleanupHigh, setCleanupHigh] = React.useState(25000);
   const [cleanupFixed, setCleanupFixed] = React.useState("");
+  const [cleanupActualUnitPrice, setCleanupActualUnitPrice] = React.useState("");
   const [invoiceNeeded, setInvoiceNeeded] = React.useState(false);
   const [managementPercent, setManagementPercent] = React.useState("");
   const [showResult, setShowResult] = React.useState(false);
@@ -118,9 +152,15 @@ function App() {
   const [plumbingBaseLow, setPlumbingBaseLow] = React.useState(pricing.plumbingElectric["新成屋"].low);
   const [plumbingBaseHigh, setPlumbingBaseHigh] = React.useState(pricing.plumbingElectric["新成屋"].high);
   const [plumbingBaseFixed, setPlumbingBaseFixed] = React.useState("");
+  const [plumbingBaseArea, setPlumbingBaseArea] = React.useState("全室");
+  const [plumbingBaseText, setPlumbingBaseText] = React.useState("新成屋基礎水電");
+  const [plumbingBaseActualUnitPrice, setPlumbingBaseActualUnitPrice] = React.useState("");
   const [paintingBaseLow, setPaintingBaseLow] = React.useState(pricing.painting["新成屋"].low);
   const [paintingBaseHigh, setPaintingBaseHigh] = React.useState(pricing.painting["新成屋"].high);
   const [paintingBaseFixed, setPaintingBaseFixed] = React.useState("");
+  const [paintingBaseArea, setPaintingBaseArea] = React.useState("全室");
+  const [paintingBaseText, setPaintingBaseText] = React.useState("新成屋基礎油漆");
+  const [paintingBaseActualUnitPrice, setPaintingBaseActualUnitPrice] = React.useState("");
 
   const visibleCabinetRows = cabinetRows.filter((row) => selectedAreas.includes(row.area));
 
@@ -130,10 +170,12 @@ function App() {
     return {
       ...row,
       typeName: type.name,
+      customText: row.customText || row.name || itemDisplayName(type, "新增櫃體"),
+      unit: row.unit || "尺",
       unitLow: Number(row.low || 0),
       unitHigh: Number(row.high || 0),
       widthFeet,
-      subtotal: pricedPair(widthFeet * Number(row.qty || 0), row.low, row.high, row.fixed)
+      subtotal: actualPricedPair(widthFeet * Number(row.qty || 0), row.actualUnitPrice)
     };
   });
 
@@ -142,45 +184,55 @@ function App() {
     return {
       ...row,
       item,
-      subtotal: pricedPair(row.qty, row.low, row.high, row.fixed)
+      customText: rowText(row, item),
+      unit: row.unit || item.unit,
+      subtotal: actualPricedPair(row.qty, row.actualUnitPrice)
     };
   });
 
   const cabinetTotal = cabinetTotals.reduce((sum, row) => addPair(sum, row.subtotal), pair());
   const woodTotal = woodTotals.reduce((sum, row) => addPair(sum, row.subtotal), pair());
-  const flooringTotal = floorNeeded ? pricedPair(floorPing, floorLow, floorHigh, floorFixed) : pair();
+  const flooringTotal = floorNeeded ? actualPricedPair(floorPing, floorActualUnitPrice) : pair();
   const peRate = pricing.plumbingElectric[condition];
   const paintRate = pricing.painting[condition];
-  const plumbingBaseTotal = plumbingNeeded ? pricedPair(ping, plumbingBaseLow, plumbingBaseHigh, plumbingBaseFixed) : pair();
-  const paintingBaseTotal = paintingNeeded ? pricedPair(ping, paintingBaseLow, paintingBaseHigh, paintingBaseFixed) : pair();
+  const plumbingBaseTotal = plumbingNeeded ? actualPricedPair(ping, plumbingBaseActualUnitPrice) : pair();
+  const paintingBaseTotal = paintingNeeded ? actualPricedPair(ping, paintingBaseActualUnitPrice) : pair();
   const plumbingExtraTotals = plumbingExtras.map((row) => ({
     ...row,
     item: plumbingItemMap[row.itemId] || pricing.plumbingExtraItems[0],
-    subtotal: plumbingNeeded ? pricedPair(row.qty, row.low, row.high, row.fixed) : pair()
+    customText: rowText(row, plumbingItemMap[row.itemId] || pricing.plumbingExtraItems[0]),
+    unit: row.unit || (plumbingItemMap[row.itemId] || pricing.plumbingExtraItems[0]).unit,
+    subtotal: plumbingNeeded ? actualPricedPair(row.qty, row.actualUnitPrice) : pair()
   }));
   const paintingExtraTotals = paintingExtras.map((row) => ({
     ...row,
     item: paintingItemMap[row.itemId] || pricing.paintingExtraItems[0],
-    subtotal: paintingNeeded ? pricedPair(row.qty, row.low, row.high, row.fixed) : pair()
+    customText: rowText(row, paintingItemMap[row.itemId] || pricing.paintingExtraItems[0]),
+    unit: row.unit || (paintingItemMap[row.itemId] || pricing.paintingExtraItems[0]).unit,
+    subtotal: paintingNeeded ? actualPricedPair(row.qty, row.actualUnitPrice) : pair()
   }));
   const airConditioningTotals = airConditioningRows.map((row) => ({
     ...row,
     item: airConditioningItemMap[row.itemId] || pricing.airConditioningItems[0],
-    subtotal: airConditioningNeeded ? pricedPair(row.qty, row.low, row.high, row.fixed) : pair()
+    customText: rowText(row, airConditioningItemMap[row.itemId] || pricing.airConditioningItems[0]),
+    unit: row.unit || (airConditioningItemMap[row.itemId] || pricing.airConditioningItems[0]).unit,
+    subtotal: airConditioningNeeded ? actualPricedPair(row.qty, row.actualUnitPrice) : pair()
   }));
   const masonryTotals = masonryRows.map((row) => ({
     ...row,
     item: masonryItemMap[row.itemId] || pricing.masonryItems[0],
+    customText: rowText(row, masonryItemMap[row.itemId] || pricing.masonryItems[0]),
+    unit: row.unit || (masonryItemMap[row.itemId] || pricing.masonryItems[0]).unit,
     subtotal: masonryNeeded
-      ? pricedPair(row.qty, row.low, row.high, row.fixed)
+      ? actualPricedPair(row.qty, row.actualUnitPrice)
       : pair()
   }));
   const plumbingExtraTotal = plumbingExtraTotals.reduce((sum, row) => addPair(sum, row.subtotal), pair());
   const paintingExtraTotal = paintingExtraTotals.reduce((sum, row) => addPair(sum, row.subtotal), pair());
   const airConditioningTotal = airConditioningTotals.reduce((sum, row) => addPair(sum, row.subtotal), pair());
   const masonryTotal = masonryTotals.reduce((sum, row) => addPair(sum, row.subtotal), pair());
-  const protectionTotal = protectionNeeded ? pricedPair(protectionQty, protectionLow, protectionHigh, protectionFixed) : pair();
-  const cleanupTotal = cleanupNeeded ? pricedPair(cleanupQty, cleanupLow, cleanupHigh, cleanupFixed) : pair();
+  const protectionTotal = protectionNeeded ? actualPricedPair(protectionQty, protectionActualUnitPrice) : pair();
+  const cleanupTotal = cleanupNeeded ? actualPricedPair(cleanupQty, cleanupActualUnitPrice) : pair();
   const plumbingTotal = addPair(plumbingBaseTotal, plumbingExtraTotal);
   const paintingTotal = addPair(paintingBaseTotal, paintingExtraTotal);
   const grandTotal = [cabinetTotal, woodTotal, flooringTotal, masonryTotal, protectionTotal, cleanupTotal, plumbingTotal, paintingTotal, airConditioningTotal].reduce(addPair, pair());
@@ -188,6 +240,7 @@ function App() {
   const managementRate = Number(managementPercent || 0) / 100;
   const managementTotal = managementRate > 0 ? pair(grandTotal.low * managementRate, grandTotal.high * managementRate) : pair();
   const finalTotal = [grandTotal, invoiceTotal, managementTotal].reduce(addPair, pair());
+  const hasAmount = (range) => Number(range.low || 0) !== 0 || Number(range.high || 0) !== 0;
 
   const updateCabinet = (id, patch) => {
     setCabinetRows((rows) => rows.map((row) => (row.id === id ? { ...row, ...patch } : row)));
@@ -201,12 +254,12 @@ function App() {
 
   const updateCabinetType = (id, typeId) => {
     const item = cabinetTypeMap[typeId] || pricing.cabinetTypes[0];
-    updateCabinet(id, { type: typeId, low: item.low, high: item.high, fixed: "" });
+    updateCabinet(id, { type: typeId, low: item.low, high: item.high, fixed: "", customText: itemDisplayName(item), unit: "尺", actualUnitPrice: "" });
   };
 
   const updateWoodItem = (id, itemId) => {
     const item = woodItemMap[itemId] || pricing.woodworkItems[0];
-    updateWood(id, { itemId, low: item.low, high: item.high, fixed: "" });
+    updateWood(id, { itemId, low: item.low, high: item.high, fixed: "", customText: itemDisplayName(item), unit: item.unit, actualUnitPrice: "" });
   };
 
   const updateFloorGrade = (gradeId) => {
@@ -214,6 +267,9 @@ function App() {
     setFloorGrade(gradeId);
     setFloorLow(item.low);
     setFloorHigh(item.high);
+    setFloorText(itemDisplayName(item));
+    setFloorUnit("坪");
+    setFloorActualUnitPrice("");
     setFloorFixed("");
     setShowResult(false);
   };
@@ -224,9 +280,13 @@ function App() {
     setCondition(value);
     setPlumbingBaseLow(nextPeRate.low);
     setPlumbingBaseHigh(nextPeRate.high);
+    setPlumbingBaseText(`${value}基礎水電`);
+    setPlumbingBaseActualUnitPrice("");
     setPlumbingBaseFixed("");
     setPaintingBaseLow(nextPaintRate.low);
     setPaintingBaseHigh(nextPaintRate.high);
+    setPaintingBaseText(`${value}基礎油漆`);
+    setPaintingBaseActualUnitPrice("");
     setPaintingBaseFixed("");
     setShowResult(false);
   };
@@ -253,60 +313,60 @@ function App() {
 
   const updatePlumbingItem = (id, itemId) => {
     const item = plumbingItemMap[itemId] || pricing.plumbingExtraItems[0];
-    updatePlumbingExtra(id, { itemId, low: item.low, high: item.high, fixed: "" });
+    updatePlumbingExtra(id, { itemId, low: item.low, high: item.high, fixed: "", customText: itemDisplayName(item), unit: item.unit, actualUnitPrice: "" });
   };
 
   const updatePaintingItem = (id, itemId) => {
     const item = paintingItemMap[itemId] || pricing.paintingExtraItems[0];
-    updatePaintingExtra(id, { itemId, low: item.low, high: item.high, fixed: "" });
+    updatePaintingExtra(id, { itemId, low: item.low, high: item.high, fixed: "", customText: itemDisplayName(item), unit: item.unit, actualUnitPrice: "" });
   };
 
   const updateAirConditioningItem = (id, itemId) => {
     const item = airConditioningItemMap[itemId] || pricing.airConditioningItems[0];
-    updateAirConditioning(id, { itemId, low: item.low, high: item.high, fixed: "" });
+    updateAirConditioning(id, { itemId, low: item.low, high: item.high, fixed: "", customText: itemDisplayName(item), unit: item.unit, actualUnitPrice: "" });
   };
 
   const updateMasonryItem = (id, itemId) => {
     const item = masonryItemMap[itemId] || pricing.masonryItems[0];
-    updateMasonry(id, { itemId, low: item.low, high: item.high, fixed: "" });
+    updateMasonry(id, { itemId, low: item.low, high: item.high, fixed: "", customText: itemDisplayName(item), unit: item.unit, actualUnitPrice: "" });
   };
 
   const addCabinet = (area = selectedAreas[0] || "客廳") => {
     const item = cabinetTypeMap.tall || pricing.cabinetTypes[0];
     setCabinetRows((rows) => [
       ...rows,
-      { id: crypto.randomUUID(), area, name: "新增櫃體", type: "tall", widthCm: 120, qty: 1, low: item.low, high: item.high, fixed: "" }
+      { id: crypto.randomUUID(), area, name: "新增櫃體", customText: itemDisplayName(item), type: "tall", widthCm: 120, qty: 1, unit: "尺", low: item.low, high: item.high, fixed: "", actualUnitPrice: "" }
     ]);
     setShowResult(false);
   };
 
   const addWood = () => {
     const item = woodItemMap.flatCeiling || pricing.woodworkItems[0];
-    setWoodRows((rows) => [...rows, { id: crypto.randomUUID(), itemId: item.id, qty: 1, low: item.low, high: item.high, fixed: "" }]);
+    setWoodRows((rows) => [...rows, { id: crypto.randomUUID(), area: selectedAreas[0] || "全室", itemId: item.id, customText: itemDisplayName(item), qty: 1, unit: item.unit, low: item.low, high: item.high, fixed: "", actualUnitPrice: "" }]);
     setShowResult(false);
   };
 
   const addPlumbingExtra = () => {
     const item = pricing.plumbingExtraItems[0];
-    setPlumbingExtras((rows) => [...rows, { id: crypto.randomUUID(), area: selectedAreas[0] || "客廳", itemId: item.id, qty: 1, low: item.low, high: item.high, fixed: "" }]);
+    setPlumbingExtras((rows) => [...rows, { id: crypto.randomUUID(), area: selectedAreas[0] || "客廳", itemId: item.id, customText: itemDisplayName(item), qty: 1, unit: item.unit, low: item.low, high: item.high, fixed: "", actualUnitPrice: "" }]);
     setShowResult(false);
   };
 
   const addPaintingExtra = () => {
     const item = pricing.paintingExtraItems[0];
-    setPaintingExtras((rows) => [...rows, { id: crypto.randomUUID(), area: selectedAreas[0] || "客廳", itemId: item.id, qty: 1, low: item.low, high: item.high, fixed: "" }]);
+    setPaintingExtras((rows) => [...rows, { id: crypto.randomUUID(), area: selectedAreas[0] || "客廳", itemId: item.id, customText: itemDisplayName(item), qty: 1, unit: item.unit, low: item.low, high: item.high, fixed: "", actualUnitPrice: "" }]);
     setShowResult(false);
   };
 
   const addAirConditioning = () => {
     const item = pricing.airConditioningItems[0];
-    setAirConditioningRows((rows) => [...rows, { id: crypto.randomUUID(), area: selectedAreas[0] || "客廳", itemId: item.id, qty: 1, low: item.low, high: item.high, fixed: "" }]);
+    setAirConditioningRows((rows) => [...rows, { id: crypto.randomUUID(), area: selectedAreas[0] || "客廳", itemId: item.id, customText: itemDisplayName(item), qty: 1, unit: item.unit, low: item.low, high: item.high, fixed: "", actualUnitPrice: "" }]);
     setShowResult(false);
   };
 
   const addMasonry = () => {
     const item = pricing.masonryItems[0];
-    setMasonryRows((rows) => [...rows, { id: crypto.randomUUID(), area: selectedAreas[0] || "廁所／浴室", itemId: item.id, qty: 1, low: item.low, high: item.high, fixed: "" }]);
+    setMasonryRows((rows) => [...rows, { id: crypto.randomUUID(), area: selectedAreas[0] || "廁所／浴室", itemId: item.id, customText: itemDisplayName(item), qty: 1, unit: item.unit, low: item.low, high: item.high, fixed: "", actualUnitPrice: "" }]);
     setShowResult(false);
   };
 
@@ -325,128 +385,128 @@ function App() {
       `基本條件：${roomType}，室內 ${ping} 坪，屋況：${condition}`,
       `估價區域：${selectedAreas.join("、") || "未選擇"}`,
       ``,
-      `櫃體工程：NT$ ${moneyRange(cabinetTotal)}`,
-      `木作工程：NT$ ${moneyRange(woodTotal)}`,
-      `地板工程：${floorNeeded ? `NT$ ${moneyRange(flooringTotal)}` : "未勾選，不列入估價"}`,
-      `土水工程：${masonryNeeded ? `NT$ ${moneyRange(masonryTotal)}` : "未勾選，不列入估價"}`,
-      ...masonryTotals.filter((row) => masonryNeeded).map((row) => `  - ${row.area}｜${row.item.name} × ${row.qty}${row.item.unit}：NT$ ${moneyRange(row.subtotal)}`),
-      `保護工程：${protectionNeeded ? `NT$ ${moneyRange(protectionTotal)}（${protectionQty}${protectionUnit} × ${unitPriceText(protectionLow, protectionHigh, protectionFixed)}）` : "未勾選，不列入估價"}`,
-      `清運廢棄物工程：${cleanupNeeded ? `NT$ ${moneyRange(cleanupTotal)}（${cleanupQty}${cleanupUnit} × ${unitPriceText(cleanupLow, cleanupHigh, cleanupFixed)}）` : "未勾選，不列入估價"}`,
-      `水電工程：${plumbingNeeded ? `NT$ ${moneyRange(plumbingTotal)}（基礎 ${moneyRange(plumbingBaseTotal)}，加價 ${moneyRange(plumbingExtraTotal)}）` : "未勾選，不列入估價"}`,
-      ...plumbingExtraTotals.filter(() => plumbingNeeded).map((row) => `  - ${row.area}｜${row.item.name} × ${row.qty}${row.item.unit}：NT$ ${moneyRange(row.subtotal)}`),
-      `油漆工程：${paintingNeeded ? `NT$ ${moneyRange(paintingTotal)}（基礎 ${moneyRange(paintingBaseTotal)}，加價 ${moneyRange(paintingExtraTotal)}）` : "未勾選，不列入估價"}`,
-      ...paintingExtraTotals.filter(() => paintingNeeded).map((row) => `  - ${row.area}｜${row.item.name} × ${row.qty}${row.item.unit}：NT$ ${moneyRange(row.subtotal)}`),
-      `空調工程：${airConditioningNeeded ? `NT$ ${moneyRange(airConditioningTotal)}` : "未勾選，不列入估價"}`,
-      ...airConditioningTotals.filter(() => airConditioningNeeded).map((row) => `  - ${row.area}｜${row.item.name} × ${row.qty}${row.item.unit}：NT$ ${moneyRange(row.subtotal)}`),
+      ...(hasAmount(cabinetTotal) ? [`櫃體工程：NT$ ${moneyRange(cabinetTotal)}`] : []),
+      ...(hasAmount(woodTotal) ? [`木作工程：NT$ ${moneyRange(woodTotal)}`] : []),
+      ...(floorNeeded && hasAmount(flooringTotal) ? [`地板工程：NT$ ${moneyRange(flooringTotal)}`] : []),
+      ...(masonryNeeded && hasAmount(masonryTotal) ? [`土水工程：NT$ ${moneyRange(masonryTotal)}`] : []),
+      ...masonryTotals.filter((row) => masonryNeeded && hasAmount(row.subtotal)).map((row) => `  - ${row.area}｜${row.customText} × ${row.qty}${row.unit}：NT$ ${moneyRange(row.subtotal)}`),
+      ...(protectionNeeded && hasAmount(protectionTotal) ? [`保護工程：NT$ ${moneyRange(protectionTotal)}（${protectionText} × ${protectionQty}${protectionUnit} × ${actualUnitPriceText(protectionActualUnitPrice)}）`] : []),
+      ...(cleanupNeeded && hasAmount(cleanupTotal) ? [`清運廢棄物工程：NT$ ${moneyRange(cleanupTotal)}（${cleanupText} × ${cleanupQty}${cleanupUnit} × ${actualUnitPriceText(cleanupActualUnitPrice)}）`] : []),
+      ...(plumbingNeeded && hasAmount(plumbingTotal) ? [`水電工程：NT$ ${moneyRange(plumbingTotal)}（基礎 ${moneyRange(plumbingBaseTotal)}，加價 ${moneyRange(plumbingExtraTotal)}）`] : []),
+      ...plumbingExtraTotals.filter((row) => plumbingNeeded && hasAmount(row.subtotal)).map((row) => `  - ${row.area}｜${row.customText} × ${row.qty}${row.unit}：NT$ ${moneyRange(row.subtotal)}`),
+      ...(paintingNeeded && hasAmount(paintingTotal) ? [`油漆工程：NT$ ${moneyRange(paintingTotal)}（基礎 ${moneyRange(paintingBaseTotal)}，加價 ${moneyRange(paintingExtraTotal)}）`] : []),
+      ...paintingExtraTotals.filter((row) => paintingNeeded && hasAmount(row.subtotal)).map((row) => `  - ${row.area}｜${row.customText} × ${row.qty}${row.unit}：NT$ ${moneyRange(row.subtotal)}`),
+      ...(airConditioningNeeded && hasAmount(airConditioningTotal) ? [`空調工程：NT$ ${moneyRange(airConditioningTotal)}`] : []),
+      ...airConditioningTotals.filter((row) => airConditioningNeeded && hasAmount(row.subtotal)).map((row) => `  - ${row.area}｜${row.customText} × ${row.qty}${row.unit}：NT$ ${moneyRange(row.subtotal)}`),
       ``,
       `稅前工程總額：NT$ ${moneyRange(grandTotal)}`,
-      `監管費${managementRate > 0 ? `（${managementPercent}%）` : ""}：NT$ ${moneyRange(managementTotal)}`,
-      `發票稅金${invoiceNeeded ? "（5%）" : "（未勾選）"}：NT$ ${moneyRange(invoiceTotal)}`,
+      ...(managementRate > 0 ? [`監管費（${managementPercent}%）：NT$ ${moneyRange(managementTotal)}`] : []),
+      ...(invoiceNeeded ? [`發票稅金（5%）：NT$ ${moneyRange(invoiceTotal)}`] : []),
       `全部總額：NT$ ${moneyRange(finalTotal)}`,
       ``,
       `免責說明：此為線上初估金額，實際報價仍需依現場丈量、材質選擇、施工條件與圖面內容為準。`
     ];
     return lines.join("\n");
-  }, [roomType, ping, condition, selectedAreas, cabinetTotal, woodTotal, floorNeeded, flooringTotal, masonryNeeded, masonryTotal, masonryTotals, protectionNeeded, protectionTotal, protectionQty, protectionUnit, protectionLow, protectionHigh, cleanupNeeded, cleanupTotal, cleanupQty, cleanupUnit, cleanupLow, cleanupHigh, plumbingNeeded, plumbingBaseTotal, plumbingExtraTotal, plumbingTotal, plumbingExtraTotals, paintingNeeded, paintingBaseTotal, paintingExtraTotal, paintingTotal, paintingExtraTotals, airConditioningNeeded, airConditioningTotal, airConditioningTotals, grandTotal, managementRate, managementPercent, managementTotal, invoiceNeeded, invoiceTotal, finalTotal]);
+  }, [roomType, ping, condition, selectedAreas, cabinetTotal, woodTotal, floorNeeded, flooringTotal, masonryNeeded, masonryTotal, masonryTotals, protectionNeeded, protectionTotal, protectionText, protectionQty, protectionUnit, protectionActualUnitPrice, cleanupNeeded, cleanupTotal, cleanupText, cleanupQty, cleanupUnit, cleanupActualUnitPrice, plumbingNeeded, plumbingBaseTotal, plumbingExtraTotal, plumbingTotal, plumbingExtraTotals, paintingNeeded, paintingBaseTotal, paintingExtraTotal, paintingTotal, paintingExtraTotals, airConditioningNeeded, airConditioningTotal, airConditioningTotals, grandTotal, managementRate, managementPercent, managementTotal, invoiceNeeded, invoiceTotal, finalTotal]);
 
   const estimateRows = [
     ...cabinetTotals.map((row) => ({
       trade: "櫃體工程",
       area: row.area,
-      name: row.name,
+      name: row.customText,
       qty: `${row.widthFeet.toFixed(2)}尺 × ${row.qty}`,
-      unit: "尺",
-      unitPrice: unitPriceText(row.low, row.high, row.fixed),
+      unit: row.unit,
+      unitPrice: actualUnitPriceText(row.actualUnitPrice),
       subtotal: row.subtotal
     })),
     ...woodTotals.map((row) => ({
       trade: "木作工程",
-      area: "-",
-      name: row.item.name,
+      area: row.area,
+      name: row.customText,
       qty: row.qty,
-      unit: row.item.unit,
-      unitPrice: unitPriceText(row.low, row.high, row.fixed),
+      unit: row.unit,
+      unitPrice: actualUnitPriceText(row.actualUnitPrice),
       subtotal: row.subtotal
     })),
     ...(floorNeeded ? [{
       trade: "地板工程",
-      area: "-",
-      name: floorItem.name,
+      area: floorArea,
+      name: floorText,
       qty: floorPing,
-      unit: "坪",
-      unitPrice: unitPriceText(floorLow, floorHigh, floorFixed),
+      unit: floorUnit,
+      unitPrice: actualUnitPriceText(floorActualUnitPrice),
       subtotal: flooringTotal
     }] : []),
     ...(masonryNeeded ? masonryTotals.map((row) => ({
       trade: "土水工程",
       area: row.area,
-      name: row.item.name,
+      name: row.customText,
       qty: row.qty,
-      unit: row.item.unit,
-      unitPrice: unitPriceText(row.low, row.high, row.fixed),
+      unit: row.unit,
+      unitPrice: actualUnitPriceText(row.actualUnitPrice),
       subtotal: row.subtotal
     })) : []),
     ...(protectionNeeded ? [{
       trade: "保護工程",
-      area: "-",
-      name: "保護工程",
+      area: protectionArea,
+      name: protectionText,
       qty: protectionQty,
       unit: protectionUnit,
-      unitPrice: unitPriceText(protectionLow, protectionHigh, protectionFixed),
+      unitPrice: actualUnitPriceText(protectionActualUnitPrice),
       subtotal: protectionTotal
     }] : []),
     ...(cleanupNeeded ? [{
       trade: "清運廢棄物工程",
-      area: "-",
-      name: "清運廢棄物工程",
+      area: cleanupArea,
+      name: cleanupText,
       qty: cleanupQty,
       unit: cleanupUnit,
-      unitPrice: unitPriceText(cleanupLow, cleanupHigh, cleanupFixed),
+      unitPrice: actualUnitPriceText(cleanupActualUnitPrice),
       subtotal: cleanupTotal
     }] : []),
     ...(plumbingNeeded ? [{
       trade: "水電工程",
-      area: "全室",
-      name: `${condition}基礎水電`,
+      area: plumbingBaseArea,
+      name: plumbingBaseText,
       qty: ping,
       unit: "坪",
-      unitPrice: unitPriceText(plumbingBaseLow, plumbingBaseHigh, plumbingBaseFixed),
+      unitPrice: actualUnitPriceText(plumbingBaseActualUnitPrice),
       subtotal: plumbingBaseTotal
     }] : []),
     ...(plumbingNeeded ? plumbingExtraTotals.map((row) => ({
       trade: "水電工程",
       area: row.area,
-      name: row.item.name,
+      name: row.customText,
       qty: row.qty,
-      unit: row.item.unit,
-      unitPrice: unitPriceText(row.low, row.high, row.fixed),
+      unit: row.unit,
+      unitPrice: actualUnitPriceText(row.actualUnitPrice),
       subtotal: row.subtotal
     })) : []),
     ...(paintingNeeded ? [{
       trade: "油漆工程",
-      area: "全室",
-      name: `${condition}基礎油漆`,
+      area: paintingBaseArea,
+      name: paintingBaseText,
       qty: ping,
       unit: "坪",
-      unitPrice: unitPriceText(paintingBaseLow, paintingBaseHigh, paintingBaseFixed),
+      unitPrice: actualUnitPriceText(paintingBaseActualUnitPrice),
       subtotal: paintingBaseTotal
     }] : []),
     ...(paintingNeeded ? paintingExtraTotals.map((row) => ({
       trade: "油漆工程",
       area: row.area,
-      name: row.item.name,
+      name: row.customText,
       qty: row.qty,
-      unit: row.item.unit,
-      unitPrice: unitPriceText(row.low, row.high, row.fixed),
+      unit: row.unit,
+      unitPrice: actualUnitPriceText(row.actualUnitPrice),
       subtotal: row.subtotal
     })) : []),
     ...(airConditioningNeeded ? airConditioningTotals.map((row) => ({
       trade: "空調工程",
       area: row.area,
-      name: row.item.name,
+      name: row.customText,
       qty: row.qty,
-      unit: row.item.unit,
-      unitPrice: unitPriceText(row.low, row.high, row.fixed),
+      unit: row.unit,
+      unitPrice: actualUnitPriceText(row.actualUnitPrice),
       subtotal: row.subtotal
     })) : [])
   ];
@@ -462,6 +522,11 @@ function App() {
       };
     })
     .filter((group) => group.rows.length > 0);
+  const totalRows = [
+    ["稅前工程總額", grandTotal],
+    ...(managementRate > 0 ? [[`監管費（${managementPercent}%）`, managementTotal]] : []),
+    ...(invoiceNeeded ? [["發票稅金（5%）", invoiceTotal]] : [])
+  ];
 
   const copySummary = async () => {
     await navigator.clipboard.writeText(summaryText);
@@ -563,11 +628,7 @@ function App() {
       tableRows.push(odsRow(["", "", "", "", "", ""], "spacer"));
     });
 
-    [
-      ["稅前工程總額", grandTotal],
-      [`監管費${managementRate > 0 ? `（${managementPercent}%）` : ""}`, managementTotal],
-      [`發票稅金${invoiceNeeded ? "（5%）" : "（未勾選）"}`, invoiceTotal]
-    ].forEach(([label, total]) => {
+    totalRows.forEach(([label, total]) => {
       tableRows.push(odsCellsRow([
         { value: "", style: "total" },
         { value: label, span: 4, style: "totalLabel" },
@@ -717,12 +778,7 @@ function App() {
       rows.push(`<tr>${htmlCell("", "td")}${htmlCell(`${group.trade} 小計`, "td", 'colspan="4" class="subtotal"')}${htmlCell(`NT$ ${moneyRange(group.subtotal)}`, "td", 'class="subtotal amount"')}</tr>`);
     });
 
-    [
-      ["稅前工程總額", grandTotal],
-      [`監管費${managementRate > 0 ? `（${managementPercent}%）` : ""}`, managementTotal],
-      [`發票稅金${invoiceNeeded ? "（5%）" : "（未勾選）"}`, invoiceTotal],
-      ["全部總額", finalTotal]
-    ].forEach(([label, total]) => {
+    [...totalRows, ["全部總額", finalTotal]].forEach(([label, total]) => {
       rows.push(`<tr>${htmlCell("", "td")}${htmlCell(label, "td", 'colspan="4" class="total"')}${htmlCell(`NT$ ${moneyRange(total)}`, "td", 'class="total amount"')}</tr>`);
     });
 
@@ -783,9 +839,7 @@ function App() {
       ].join("｜")),
       `${group.trade}小計｜｜｜｜｜NT$ ${moneyRange(group.subtotal)}`
     ]),
-    `稅前工程總額｜｜｜｜｜NT$ ${moneyRange(grandTotal)}`,
-    `監管費${managementRate > 0 ? `（${managementPercent}%）` : ""}｜｜｜｜｜NT$ ${moneyRange(managementTotal)}`,
-    `發票稅金${invoiceNeeded ? "（5%）" : "（未勾選）"}｜｜｜｜｜NT$ ${moneyRange(invoiceTotal)}`,
+    ...totalRows.map(([label, total]) => `${label}｜｜｜｜｜NT$ ${moneyRange(total)}`),
     `全部總額｜｜｜｜｜NT$ ${moneyRange(finalTotal)}`
   ].join("\n");
 
@@ -817,10 +871,7 @@ function App() {
           <Card title="基本資料">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <Field label="房型">
-                <select className="rounded-lg border border-coffee/20 bg-white px-3 py-3" value={roomType} onChange={(e) => { setRoomType(e.target.value); setShowResult(false); }}>
-                  <option>2房</option>
-                  <option>3房</option>
-                </select>
+                <input className="rounded-lg border border-coffee/20 bg-white px-3 py-3" value={roomType} placeholder="例如：3房2廳" onChange={(e) => { setRoomType(e.target.value); setShowResult(false); }} />
               </Field>
               <Field label="室內坪數">
                 <input className={numberInputPanelClass} type="number" min="1" value={ping} onChange={(e) => { setPing(Number(e.target.value)); setShowResult(false); }} />
@@ -882,14 +933,14 @@ function App() {
                       <div className="grid gap-3">
                         {areaRows.map((row) => (
                           <div key={row.id} className="rounded-lg border border-coffee/10 bg-creamSoft p-4">
-                            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-7">
-                              <Field label="櫃體名稱">
-                                <input className="rounded-lg border border-coffee/20 px-3 py-2" value={row.name} onChange={(e) => updateCabinet(row.id, { name: e.target.value })} />
-                              </Field>
+                            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[1.1fr_1fr_110px_90px_90px_120px]">
                               <Field label="高度分類">
                                 <select className="rounded-lg border border-coffee/20 px-3 py-2" value={row.type} onChange={(e) => updateCabinetType(row.id, e.target.value)}>
                                   {pricing.cabinetTypes.map((type) => <option key={type.id} value={type.id}>{type.name}</option>)}
                                 </select>
+                              </Field>
+                              <Field label="項目文字">
+                                <input className={fullTextInputClass} value={row.customText} onChange={(e) => updateCabinet(row.id, { customText: e.target.value })} />
                               </Field>
                               <Field label="寬度公分">
                                 <input className={numberInputClass} type="number" min="0" value={row.widthCm} onChange={(e) => updateCabinet(row.id, { widthCm: Number(e.target.value) })} />
@@ -897,20 +948,16 @@ function App() {
                               <Field label="數量">
                                 <input className={numberInputClass} type="number" min="0" value={row.qty} onChange={(e) => updateCabinet(row.id, { qty: Number(e.target.value) })} />
                               </Field>
-                              <Field label="低標單價">
-                                <input className={numberInputClass} type="number" min="0" value={row.low} onChange={(e) => updateCabinet(row.id, { low: Number(e.target.value) })} />
+                              <Field label="單位">
+                                <input className={numberInputClass} value={row.unit} onChange={(e) => updateCabinet(row.id, { unit: e.target.value })} />
                               </Field>
-                              <Field label="高標單價">
-                                <input className={numberInputClass} type="number" min="0" value={row.high} onChange={(e) => updateCabinet(row.id, { high: Number(e.target.value) })} />
-                              </Field>
-                              <Field label="固定單價">
-                                <input className={numberInputClass} type="number" min="0" value={row.fixed} placeholder="選填" onChange={(e) => updateCabinet(row.id, { fixed: e.target.value })} />
+                              <Field label="實際單價">
+                                <input className={numberInputClass} type="number" min="0" value={row.actualUnitPrice} placeholder="自行填入" onChange={(e) => updateCabinet(row.id, { actualUnitPrice: e.target.value })} />
                               </Field>
                             </div>
                             <div className="mt-3 grid gap-2 rounded-lg bg-white px-3 py-3 text-sm text-stone-700 md:grid-cols-4">
                               <div>寬度台尺：<b>{row.widthFeet.toFixed(2)}</b></div>
-                              <div>低標單價：<b>{money(row.unitLow)}</b>元／尺</div>
-                              <div>高標單價：<b>{money(row.unitHigh)}</b>元／尺</div>
+                              <div className="md:col-span-2">參考依據：<b>{referenceText(cabinetTypeMap[row.type] || pricing.cabinetTypes[0], row.unit)}</b></div>
                               <div>小計：<b>NT$ {moneyRange(row.subtotal)}</b></div>
                             </div>
                             <button className="mt-3 rounded-lg border border-red-200 px-3 py-2 text-sm font-bold text-red-700" type="button" onClick={() => setCabinetRows((rows) => rows.filter((item) => item.id !== row.id))}>刪除此櫃體</button>
@@ -928,27 +975,33 @@ function App() {
             <div className="grid gap-4">
               {woodTotals.map((row) => (
                 <div key={row.id} className="rounded-lg border border-coffee/10 bg-white p-4">
-                  <div className="grid gap-3 md:grid-cols-[1fr_110px_130px_130px_130px_auto] md:items-end">
-                    <Field label="木作項目">
-                      <select className="rounded-lg border border-coffee/20 px-3 py-2" value={row.itemId} onChange={(e) => updateWoodItem(row.id, e.target.value)}>
-                        {pricing.woodworkItems.map((item) => <option key={item.id} value={item.id}>{item.name}｜{money(item.low)}-{money(item.high)}元／{item.unit}</option>)}
+                  <div className="grid gap-3 md:grid-cols-[130px_1fr_1fr_90px_90px_120px_auto] md:items-end">
+                    <Field label="區域">
+                      <select className="rounded-lg border border-coffee/20 px-3 py-2" value={row.area} onChange={(e) => updateWood(row.id, { area: e.target.value })}>
+                        {(["全室", ...(selectedAreas.length ? selectedAreas : pricing.areas)]).map((area) => <option key={area}>{area}</option>)}
                       </select>
                     </Field>
-                    <Field label={`數量／尺寸（${row.item.unit}）`}>
+                    <Field label="木作項目">
+                      <select className="rounded-lg border border-coffee/20 px-3 py-2" value={row.itemId} onChange={(e) => updateWoodItem(row.id, e.target.value)}>
+                        {pricing.woodworkItems.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+                      </select>
+                    </Field>
+                    <Field label="項目文字">
+                      <input className={fullTextInputClass} value={row.customText} onChange={(e) => updateWood(row.id, { customText: e.target.value })} />
+                    </Field>
+                    <Field label={`數量／尺寸`}>
                       <input className={numberInputClass} type="number" min="0" value={row.qty} onChange={(e) => updateWood(row.id, { qty: Number(e.target.value) })} />
                     </Field>
-                    <Field label="低標單價">
-                      <input className={numberInputClass} type="number" min="0" value={row.low} onChange={(e) => updateWood(row.id, { low: Number(e.target.value) })} />
+                    <Field label="單位">
+                      <input className={numberInputClass} value={row.unit} onChange={(e) => updateWood(row.id, { unit: e.target.value })} />
                     </Field>
-                    <Field label="高標單價">
-                      <input className={numberInputClass} type="number" min="0" value={row.high} onChange={(e) => updateWood(row.id, { high: Number(e.target.value) })} />
-                    </Field>
-                    <Field label="固定單價">
-                      <input className={numberInputClass} type="number" min="0" value={row.fixed} placeholder="選填" onChange={(e) => updateWood(row.id, { fixed: e.target.value })} />
+                    <Field label="實際單價">
+                      <input className={numberInputClass} type="number" min="0" value={row.actualUnitPrice} placeholder="自行填入" onChange={(e) => updateWood(row.id, { actualUnitPrice: e.target.value })} />
                     </Field>
                     <button className="rounded-lg border border-red-200 px-3 py-2 text-sm font-bold text-red-700" type="button" onClick={() => setWoodRows((rows) => rows.filter((item) => item.id !== row.id))}>刪除</button>
                   </div>
                   <div className="mt-3 rounded-lg bg-cream px-3 py-3 text-sm text-stone-700">
+                    <div>參考依據：<b>{referenceText(row.item)}</b></div>
                     小計：<b>NT$ {moneyRange(row.subtotal)}</b>
                   </div>
                 </div>
@@ -966,24 +1019,30 @@ function App() {
                 </label>
                 <Field label="地板工程等級">
                   <select className="rounded-lg border border-coffee/20 bg-white px-3 py-3 disabled:bg-stone-100 disabled:text-stone-400" value={floorGrade} disabled={!floorNeeded} onChange={(e) => updateFloorGrade(e.target.value)}>
-                    {pricing.flooring.map((item) => <option key={item.id} value={item.id}>{item.name}｜{money(item.low)}元／坪</option>)}
+                    {pricing.flooring.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
                   </select>
+                </Field>
+                <Field label="區域">
+                  <select className="rounded-lg border border-coffee/20 bg-white px-3 py-3 disabled:bg-stone-100 disabled:text-stone-400" value={floorArea} disabled={!floorNeeded} onChange={(e) => { setFloorArea(e.target.value); setShowResult(false); }}>
+                    {(["全室", ...(selectedAreas.length ? selectedAreas : pricing.areas)]).map((area) => <option key={area}>{area}</option>)}
+                  </select>
+                </Field>
+                <Field label="項目文字">
+                  <input className={fullTextInputClass} value={floorText} disabled={!floorNeeded} onChange={(e) => { setFloorText(e.target.value); setShowResult(false); }} />
                 </Field>
                 <Field label="地板施工坪數">
                   <input className={numberInputPanelClass} type="number" min="0" value={floorPing} disabled={!floorNeeded} onChange={(e) => { setFloorPing(Number(e.target.value)); setShowResult(false); }} />
                 </Field>
-                <Field label="低標單價／坪">
-                  <input className={numberInputPanelClass} type="number" min="0" value={floorLow} disabled={!floorNeeded} onChange={(e) => { setFloorLow(Number(e.target.value)); setShowResult(false); }} />
+                <Field label="單位">
+                  <input className={numberInputPanelClass} value={floorUnit} disabled={!floorNeeded} onChange={(e) => { setFloorUnit(e.target.value); setShowResult(false); }} />
                 </Field>
-                <Field label="高標單價／坪">
-                  <input className={numberInputPanelClass} type="number" min="0" value={floorHigh} disabled={!floorNeeded} onChange={(e) => { setFloorHigh(Number(e.target.value)); setShowResult(false); }} />
-                </Field>
-                <Field label="固定單價／坪">
-                  <input className={numberInputPanelClass} type="number" min="0" value={floorFixed} placeholder="選填" disabled={!floorNeeded} onChange={(e) => { setFloorFixed(e.target.value); setShowResult(false); }} />
+                <Field label="實際單價">
+                  <input className={numberInputPanelClass} type="number" min="0" value={floorActualUnitPrice} placeholder="自行填入" disabled={!floorNeeded} onChange={(e) => { setFloorActualUnitPrice(e.target.value); setShowResult(false); }} />
                 </Field>
               </div>
               <div className="rounded-lg bg-white p-4 text-sm leading-7 text-stone-700">
-                <div>地板工程：{floorNeeded ? `${money(floorLow)}-${money(floorHigh)}元／坪，依施工坪數自動計算。` : "未勾選，不列入估價。"}</div>
+                <div>參考依據：{floorNeeded ? referenceText(floorItem, "坪") : "勾選後顯示地板參考依據。"}</div>
+                <div>實際單價：{actualUnitPriceText(floorActualUnitPrice)}／{floorUnit}</div>
                 <div>目前小計：NT$ {moneyRange(flooringTotal)}</div>
               </div>
             </div>
@@ -1011,7 +1070,7 @@ function App() {
 
                 {masonryTotals.map((row) => (
                   <div key={row.id} className={`rounded-lg border border-coffee/10 bg-white p-4 ${masonryNeeded ? "" : "opacity-60"}`}>
-                    <div className="grid gap-3 md:grid-cols-[130px_1fr_90px_120px_120px_120px_auto] md:items-end">
+                    <div className="grid gap-3 md:grid-cols-[130px_1fr_1fr_90px_90px_120px_auto] md:items-end">
                       <Field label="區域">
                         <select className="rounded-lg border border-coffee/20 px-3 py-2" value={row.area} disabled={!masonryNeeded} onChange={(e) => updateMasonry(row.id, { area: e.target.value })}>
                           {(selectedAreas.length ? selectedAreas : pricing.areas).map((area) => <option key={area}>{area}</option>)}
@@ -1019,24 +1078,27 @@ function App() {
                       </Field>
                       <Field label="土水項目">
                         <select className="rounded-lg border border-coffee/20 px-3 py-2" value={row.itemId} disabled={!masonryNeeded} onChange={(e) => updateMasonryItem(row.id, e.target.value)}>
-                          {pricing.masonryItems.map((item) => <option key={item.id} value={item.id}>{item.name}｜{money(item.low)}-{money(item.high)}元／{item.unit}</option>)}
+                          {pricing.masonryItems.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
                         </select>
                       </Field>
-                      <Field label={`數量（${row.item.unit}）`}>
+                      <Field label="項目文字">
+                        <input className={fullTextInputClass} value={row.customText} disabled={!masonryNeeded} onChange={(e) => updateMasonry(row.id, { customText: e.target.value })} />
+                      </Field>
+                      <Field label="數量">
                         <input className={numberInputClass} type="number" min="0" value={row.qty} disabled={!masonryNeeded} onChange={(e) => updateMasonry(row.id, { qty: Number(e.target.value) })} />
                       </Field>
-                      <Field label="低標單價">
-                        <input className={numberInputClass} type="number" min="0" value={row.low} disabled={!masonryNeeded} onChange={(e) => updateMasonry(row.id, { low: Number(e.target.value) })} />
+                      <Field label="單位">
+                        <input className={numberInputClass} value={row.unit} disabled={!masonryNeeded} onChange={(e) => updateMasonry(row.id, { unit: e.target.value })} />
                       </Field>
-                      <Field label="高標單價">
-                        <input className={numberInputClass} type="number" min="0" value={row.high} disabled={!masonryNeeded} onChange={(e) => updateMasonry(row.id, { high: Number(e.target.value) })} />
-                      </Field>
-                      <Field label="固定單價">
-                        <input className={numberInputClass} type="number" min="0" value={row.fixed} placeholder="選填" disabled={!masonryNeeded} onChange={(e) => updateMasonry(row.id, { fixed: e.target.value })} />
+                      <Field label="實際單價">
+                        <input className={numberInputClass} type="number" min="0" value={row.actualUnitPrice} placeholder="自行填入" disabled={!masonryNeeded} onChange={(e) => updateMasonry(row.id, { actualUnitPrice: e.target.value })} />
                       </Field>
                       <button className="rounded-lg border border-red-200 px-3 py-2 text-sm font-bold text-red-700 disabled:opacity-50" type="button" disabled={!masonryNeeded} onClick={() => setMasonryRows((rows) => rows.filter((item) => item.id !== row.id))}>刪除</button>
                     </div>
-                    <div className="mt-3 rounded-lg bg-cream px-3 py-3 text-sm text-stone-700">小計：<b>NT$ {moneyRange(row.subtotal)}</b></div>
+                    <div className="mt-3 rounded-lg bg-cream px-3 py-3 text-sm text-stone-700">
+                      <div>參考依據：<b>{referenceText(row.item)}</b></div>
+                      小計：<b>NT$ {moneyRange(row.subtotal)}</b>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1053,21 +1115,23 @@ function App() {
                 </span>
               </label>
               <div className={`rounded-lg border border-coffee/10 bg-white p-4 ${protectionNeeded ? "" : "opacity-60"}`}>
-                <div className="grid gap-3 md:grid-cols-[100px_100px_140px_140px_140px] md:items-end">
+                <div className="grid gap-3 md:grid-cols-[130px_1fr_100px_100px_140px] md:items-end">
+                  <Field label="區域">
+                    <select className="rounded-lg border border-coffee/20 px-3 py-2" value={protectionArea} disabled={!protectionNeeded} onChange={(e) => { setProtectionArea(e.target.value); setShowResult(false); }}>
+                      {(["全室", ...(selectedAreas.length ? selectedAreas : pricing.areas)]).map((area) => <option key={area}>{area}</option>)}
+                    </select>
+                  </Field>
+                  <Field label="項目文字">
+                    <input className={fullTextInputClass} value={protectionText} disabled={!protectionNeeded} onChange={(e) => { setProtectionText(e.target.value); setShowResult(false); }} />
+                  </Field>
                   <Field label="數量">
                     <input className={numberInputClass} type="number" min="0" value={protectionQty} disabled={!protectionNeeded} onChange={(e) => { setProtectionQty(Number(e.target.value)); setShowResult(false); }} />
                   </Field>
                   <Field label="單位">
                     <input className="rounded-lg border border-coffee/20 px-3 py-2" value={protectionUnit} disabled={!protectionNeeded} onChange={(e) => { setProtectionUnit(e.target.value); setShowResult(false); }} />
                   </Field>
-                  <Field label="低標單價">
-                    <input className={numberInputClass} type="number" min="0" value={protectionLow} disabled={!protectionNeeded} onChange={(e) => { setProtectionLow(Number(e.target.value)); setShowResult(false); }} />
-                  </Field>
-                  <Field label="高標單價">
-                    <input className={numberInputClass} type="number" min="0" value={protectionHigh} disabled={!protectionNeeded} onChange={(e) => { setProtectionHigh(Number(e.target.value)); setShowResult(false); }} />
-                  </Field>
-                  <Field label="固定單價">
-                    <input className={numberInputClass} type="number" min="0" value={protectionFixed} placeholder="選填" disabled={!protectionNeeded} onChange={(e) => { setProtectionFixed(e.target.value); setShowResult(false); }} />
+                  <Field label="實際單價">
+                    <input className={numberInputClass} type="number" min="0" value={protectionActualUnitPrice} placeholder="自行填入" disabled={!protectionNeeded} onChange={(e) => { setProtectionActualUnitPrice(e.target.value); setShowResult(false); }} />
                   </Field>
                 </div>
                 <div className="mt-3 rounded-lg bg-cream px-3 py-3 text-sm text-stone-700">小計：<b>NT$ {moneyRange(protectionTotal)}</b></div>
@@ -1085,21 +1149,23 @@ function App() {
                 </span>
               </label>
               <div className={`rounded-lg border border-coffee/10 bg-white p-4 ${cleanupNeeded ? "" : "opacity-60"}`}>
-                <div className="grid gap-3 md:grid-cols-[100px_100px_140px_140px_140px] md:items-end">
+                <div className="grid gap-3 md:grid-cols-[130px_1fr_100px_100px_140px] md:items-end">
+                  <Field label="區域">
+                    <select className="rounded-lg border border-coffee/20 px-3 py-2" value={cleanupArea} disabled={!cleanupNeeded} onChange={(e) => { setCleanupArea(e.target.value); setShowResult(false); }}>
+                      {(["全室", ...(selectedAreas.length ? selectedAreas : pricing.areas)]).map((area) => <option key={area}>{area}</option>)}
+                    </select>
+                  </Field>
+                  <Field label="項目文字">
+                    <input className={fullTextInputClass} value={cleanupText} disabled={!cleanupNeeded} onChange={(e) => { setCleanupText(e.target.value); setShowResult(false); }} />
+                  </Field>
                   <Field label="數量">
                     <input className={numberInputClass} type="number" min="0" value={cleanupQty} disabled={!cleanupNeeded} onChange={(e) => { setCleanupQty(Number(e.target.value)); setShowResult(false); }} />
                   </Field>
                   <Field label="單位">
                     <input className="rounded-lg border border-coffee/20 px-3 py-2" value={cleanupUnit} disabled={!cleanupNeeded} onChange={(e) => { setCleanupUnit(e.target.value); setShowResult(false); }} />
                   </Field>
-                  <Field label="低標單價">
-                    <input className={numberInputClass} type="number" min="0" value={cleanupLow} disabled={!cleanupNeeded} onChange={(e) => { setCleanupLow(Number(e.target.value)); setShowResult(false); }} />
-                  </Field>
-                  <Field label="高標單價">
-                    <input className={numberInputClass} type="number" min="0" value={cleanupHigh} disabled={!cleanupNeeded} onChange={(e) => { setCleanupHigh(Number(e.target.value)); setShowResult(false); }} />
-                  </Field>
-                  <Field label="固定單價">
-                    <input className={numberInputClass} type="number" min="0" value={cleanupFixed} placeholder="選填" disabled={!cleanupNeeded} onChange={(e) => { setCleanupFixed(e.target.value); setShowResult(false); }} />
+                  <Field label="實際單價">
+                    <input className={numberInputClass} type="number" min="0" value={cleanupActualUnitPrice} placeholder="自行填入" disabled={!cleanupNeeded} onChange={(e) => { setCleanupActualUnitPrice(e.target.value); setShowResult(false); }} />
                   </Field>
                 </div>
                 <div className="mt-3 rounded-lg bg-cream px-3 py-3 text-sm text-stone-700">小計：<b>NT$ {moneyRange(cleanupTotal)}</b></div>
@@ -1114,16 +1180,18 @@ function App() {
                   <input type="checkbox" checked={plumbingNeeded} onChange={(e) => { setPlumbingNeeded(e.target.checked); setShowResult(false); }} />
                   需要水電工程
                 </label>
-                <div>基礎估算：{condition}，可自由調整每坪單價 × {ping} 坪</div>
-                <div className="mt-3 grid gap-3 md:grid-cols-3">
-                  <Field label="基礎低標單價／坪">
-                    <input className={numberInputClass} type="number" min="0" value={plumbingBaseLow} disabled={!plumbingNeeded} onChange={(e) => { setPlumbingBaseLow(Number(e.target.value)); setShowResult(false); }} />
+                <div>基礎估算：{condition}，參考 {money(plumbingBaseLow)}-{money(plumbingBaseHigh)}元／坪，實際單價由你填入。</div>
+                <div className="mt-3 grid gap-3 md:grid-cols-[130px_1fr_130px]">
+                  <Field label="區域">
+                    <select className="rounded-lg border border-coffee/20 px-3 py-2" value={plumbingBaseArea} disabled={!plumbingNeeded} onChange={(e) => { setPlumbingBaseArea(e.target.value); setShowResult(false); }}>
+                      {(["全室", ...(selectedAreas.length ? selectedAreas : pricing.areas)]).map((area) => <option key={area}>{area}</option>)}
+                    </select>
                   </Field>
-                  <Field label="基礎高標單價／坪">
-                    <input className={numberInputClass} type="number" min="0" value={plumbingBaseHigh} disabled={!plumbingNeeded} onChange={(e) => { setPlumbingBaseHigh(Number(e.target.value)); setShowResult(false); }} />
+                  <Field label="基礎項目文字">
+                    <input className={fullTextInputClass} value={plumbingBaseText} disabled={!plumbingNeeded} onChange={(e) => { setPlumbingBaseText(e.target.value); setShowResult(false); }} />
                   </Field>
-                  <Field label="基礎固定單價／坪">
-                    <input className={numberInputClass} type="number" min="0" value={plumbingBaseFixed} placeholder="選填" disabled={!plumbingNeeded} onChange={(e) => { setPlumbingBaseFixed(e.target.value); setShowResult(false); }} />
+                  <Field label="實際單價／坪">
+                    <input className={numberInputClass} type="number" min="0" value={plumbingBaseActualUnitPrice} placeholder="自行填入" disabled={!plumbingNeeded} onChange={(e) => { setPlumbingBaseActualUnitPrice(e.target.value); setShowResult(false); }} />
                   </Field>
                 </div>
                 <div>基礎小計：<b>NT$ {moneyRange(plumbingBaseTotal)}</b></div>
@@ -1139,7 +1207,7 @@ function App() {
 
                 {plumbingExtraTotals.map((row) => (
                   <div key={row.id} className={`rounded-lg border border-coffee/10 bg-white p-4 ${plumbingNeeded ? "" : "opacity-60"}`}>
-                    <div className="grid gap-3 md:grid-cols-[130px_1fr_90px_120px_120px_120px_auto] md:items-end">
+                    <div className="grid gap-3 md:grid-cols-[130px_1fr_1fr_90px_90px_120px_auto] md:items-end">
                       <Field label="區域">
                         <select className="rounded-lg border border-coffee/20 px-3 py-2" value={row.area} disabled={!plumbingNeeded} onChange={(e) => updatePlumbingExtra(row.id, { area: e.target.value })}>
                           {(selectedAreas.length ? selectedAreas : pricing.areas).map((area) => <option key={area}>{area}</option>)}
@@ -1147,24 +1215,27 @@ function App() {
                       </Field>
                       <Field label="水電項目">
                         <select className="rounded-lg border border-coffee/20 px-3 py-2" value={row.itemId} disabled={!plumbingNeeded} onChange={(e) => updatePlumbingItem(row.id, e.target.value)}>
-                          {pricing.plumbingExtraItems.map((item) => <option key={item.id} value={item.id}>{item.name}｜{money(item.low)}-{money(item.high)}元／{item.unit}</option>)}
+                          {pricing.plumbingExtraItems.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
                         </select>
                       </Field>
-                      <Field label={`數量（${row.item.unit}）`}>
+                      <Field label="項目文字">
+                        <input className={fullTextInputClass} value={row.customText} disabled={!plumbingNeeded} onChange={(e) => updatePlumbingExtra(row.id, { customText: e.target.value })} />
+                      </Field>
+                      <Field label="數量">
                         <input className={numberInputClass} type="number" min="0" value={row.qty} disabled={!plumbingNeeded} onChange={(e) => updatePlumbingExtra(row.id, { qty: Number(e.target.value) })} />
                       </Field>
-                      <Field label="低標單價">
-                        <input className={numberInputClass} type="number" min="0" value={row.low} disabled={!plumbingNeeded} onChange={(e) => updatePlumbingExtra(row.id, { low: Number(e.target.value) })} />
+                      <Field label="單位">
+                        <input className={numberInputClass} value={row.unit} disabled={!plumbingNeeded} onChange={(e) => updatePlumbingExtra(row.id, { unit: e.target.value })} />
                       </Field>
-                      <Field label="高標單價">
-                        <input className={numberInputClass} type="number" min="0" value={row.high} disabled={!plumbingNeeded} onChange={(e) => updatePlumbingExtra(row.id, { high: Number(e.target.value) })} />
-                      </Field>
-                      <Field label="固定單價">
-                        <input className={numberInputClass} type="number" min="0" value={row.fixed} placeholder="選填" disabled={!plumbingNeeded} onChange={(e) => updatePlumbingExtra(row.id, { fixed: e.target.value })} />
+                      <Field label="實際單價">
+                        <input className={numberInputClass} type="number" min="0" value={row.actualUnitPrice} placeholder="自行填入" disabled={!plumbingNeeded} onChange={(e) => updatePlumbingExtra(row.id, { actualUnitPrice: e.target.value })} />
                       </Field>
                       <button className="rounded-lg border border-red-200 px-3 py-2 text-sm font-bold text-red-700 disabled:opacity-50" type="button" disabled={!plumbingNeeded} onClick={() => setPlumbingExtras((rows) => rows.filter((item) => item.id !== row.id))}>刪除</button>
                     </div>
-                    <div className="mt-3 rounded-lg bg-cream px-3 py-3 text-sm text-stone-700">小計：<b>NT$ {moneyRange(row.subtotal)}</b></div>
+                    <div className="mt-3 rounded-lg bg-cream px-3 py-3 text-sm text-stone-700">
+                      <div>參考依據：<b>{referenceText(row.item)}</b></div>
+                      小計：<b>NT$ {moneyRange(row.subtotal)}</b>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1178,16 +1249,18 @@ function App() {
                   <input type="checkbox" checked={paintingNeeded} onChange={(e) => { setPaintingNeeded(e.target.checked); setShowResult(false); }} />
                   需要油漆工程
                 </label>
-                <div>基礎估算：{condition}，可自由調整每坪單價 × {ping} 坪</div>
-                <div className="mt-3 grid gap-3 md:grid-cols-3">
-                  <Field label="基礎低標單價／坪">
-                    <input className={numberInputClass} type="number" min="0" value={paintingBaseLow} disabled={!paintingNeeded} onChange={(e) => { setPaintingBaseLow(Number(e.target.value)); setShowResult(false); }} />
+                <div>基礎估算：{condition}，參考 {money(paintingBaseLow)}-{money(paintingBaseHigh)}元／坪，實際單價由你填入。</div>
+                <div className="mt-3 grid gap-3 md:grid-cols-[130px_1fr_130px]">
+                  <Field label="區域">
+                    <select className="rounded-lg border border-coffee/20 px-3 py-2" value={paintingBaseArea} disabled={!paintingNeeded} onChange={(e) => { setPaintingBaseArea(e.target.value); setShowResult(false); }}>
+                      {(["全室", ...(selectedAreas.length ? selectedAreas : pricing.areas)]).map((area) => <option key={area}>{area}</option>)}
+                    </select>
                   </Field>
-                  <Field label="基礎高標單價／坪">
-                    <input className={numberInputClass} type="number" min="0" value={paintingBaseHigh} disabled={!paintingNeeded} onChange={(e) => { setPaintingBaseHigh(Number(e.target.value)); setShowResult(false); }} />
+                  <Field label="基礎項目文字">
+                    <input className={fullTextInputClass} value={paintingBaseText} disabled={!paintingNeeded} onChange={(e) => { setPaintingBaseText(e.target.value); setShowResult(false); }} />
                   </Field>
-                  <Field label="基礎固定單價／坪">
-                    <input className={numberInputClass} type="number" min="0" value={paintingBaseFixed} placeholder="選填" disabled={!paintingNeeded} onChange={(e) => { setPaintingBaseFixed(e.target.value); setShowResult(false); }} />
+                  <Field label="實際單價／坪">
+                    <input className={numberInputClass} type="number" min="0" value={paintingBaseActualUnitPrice} placeholder="自行填入" disabled={!paintingNeeded} onChange={(e) => { setPaintingBaseActualUnitPrice(e.target.value); setShowResult(false); }} />
                   </Field>
                 </div>
                 <div>基礎小計：<b>NT$ {moneyRange(paintingBaseTotal)}</b></div>
@@ -1203,7 +1276,7 @@ function App() {
 
                 {paintingExtraTotals.map((row) => (
                   <div key={row.id} className={`rounded-lg border border-coffee/10 bg-white p-4 ${paintingNeeded ? "" : "opacity-60"}`}>
-                    <div className="grid gap-3 md:grid-cols-[130px_1fr_90px_120px_120px_120px_auto] md:items-end">
+                    <div className="grid gap-3 md:grid-cols-[130px_1fr_1fr_90px_90px_120px_auto] md:items-end">
                       <Field label="區域">
                         <select className="rounded-lg border border-coffee/20 px-3 py-2" value={row.area} disabled={!paintingNeeded} onChange={(e) => updatePaintingExtra(row.id, { area: e.target.value })}>
                           {(selectedAreas.length ? selectedAreas : pricing.areas).map((area) => <option key={area}>{area}</option>)}
@@ -1211,24 +1284,27 @@ function App() {
                       </Field>
                       <Field label="油漆項目">
                         <select className="rounded-lg border border-coffee/20 px-3 py-2" value={row.itemId} disabled={!paintingNeeded} onChange={(e) => updatePaintingItem(row.id, e.target.value)}>
-                          {pricing.paintingExtraItems.map((item) => <option key={item.id} value={item.id}>{item.name}｜{money(item.low)}-{money(item.high)}元／{item.unit}</option>)}
+                          {pricing.paintingExtraItems.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
                         </select>
                       </Field>
-                      <Field label={`數量（${row.item.unit}）`}>
+                      <Field label="項目文字">
+                        <input className={fullTextInputClass} value={row.customText} disabled={!paintingNeeded} onChange={(e) => updatePaintingExtra(row.id, { customText: e.target.value })} />
+                      </Field>
+                      <Field label="數量">
                         <input className={numberInputClass} type="number" min="0" value={row.qty} disabled={!paintingNeeded} onChange={(e) => updatePaintingExtra(row.id, { qty: Number(e.target.value) })} />
                       </Field>
-                      <Field label="低標單價">
-                        <input className={numberInputClass} type="number" min="0" value={row.low} disabled={!paintingNeeded} onChange={(e) => updatePaintingExtra(row.id, { low: Number(e.target.value) })} />
+                      <Field label="單位">
+                        <input className={numberInputClass} value={row.unit} disabled={!paintingNeeded} onChange={(e) => updatePaintingExtra(row.id, { unit: e.target.value })} />
                       </Field>
-                      <Field label="高標單價">
-                        <input className={numberInputClass} type="number" min="0" value={row.high} disabled={!paintingNeeded} onChange={(e) => updatePaintingExtra(row.id, { high: Number(e.target.value) })} />
-                      </Field>
-                      <Field label="固定單價">
-                        <input className={numberInputClass} type="number" min="0" value={row.fixed} placeholder="選填" disabled={!paintingNeeded} onChange={(e) => updatePaintingExtra(row.id, { fixed: e.target.value })} />
+                      <Field label="實際單價">
+                        <input className={numberInputClass} type="number" min="0" value={row.actualUnitPrice} placeholder="自行填入" disabled={!paintingNeeded} onChange={(e) => updatePaintingExtra(row.id, { actualUnitPrice: e.target.value })} />
                       </Field>
                       <button className="rounded-lg border border-red-200 px-3 py-2 text-sm font-bold text-red-700 disabled:opacity-50" type="button" disabled={!paintingNeeded} onClick={() => setPaintingExtras((rows) => rows.filter((item) => item.id !== row.id))}>刪除</button>
                     </div>
-                    <div className="mt-3 rounded-lg bg-cream px-3 py-3 text-sm text-stone-700">小計：<b>NT$ {moneyRange(row.subtotal)}</b></div>
+                    <div className="mt-3 rounded-lg bg-cream px-3 py-3 text-sm text-stone-700">
+                      <div>參考依據：<b>{referenceText(row.item)}</b></div>
+                      小計：<b>NT$ {moneyRange(row.subtotal)}</b>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1257,7 +1333,7 @@ function App() {
 
                 {airConditioningTotals.map((row) => (
                   <div key={row.id} className={`rounded-lg border border-coffee/10 bg-white p-4 ${airConditioningNeeded ? "" : "opacity-60"}`}>
-                    <div className="grid gap-3 md:grid-cols-[130px_1fr_90px_120px_120px_120px_auto] md:items-end">
+                    <div className="grid gap-3 md:grid-cols-[130px_1fr_1fr_90px_90px_120px_auto] md:items-end">
                       <Field label="區域">
                         <select className="rounded-lg border border-coffee/20 px-3 py-2" value={row.area} disabled={!airConditioningNeeded} onChange={(e) => updateAirConditioning(row.id, { area: e.target.value })}>
                           {(selectedAreas.length ? selectedAreas : pricing.areas).map((area) => <option key={area}>{area}</option>)}
@@ -1265,24 +1341,27 @@ function App() {
                       </Field>
                       <Field label="空調項目">
                         <select className="rounded-lg border border-coffee/20 px-3 py-2" value={row.itemId} disabled={!airConditioningNeeded} onChange={(e) => updateAirConditioningItem(row.id, e.target.value)}>
-                          {pricing.airConditioningItems.map((item) => <option key={item.id} value={item.id}>{item.name}｜{money(item.low)}-{money(item.high)}元／{item.unit}</option>)}
+                          {pricing.airConditioningItems.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
                         </select>
                       </Field>
-                      <Field label={`數量（${row.item.unit}）`}>
+                      <Field label="項目文字">
+                        <input className={fullTextInputClass} value={row.customText} disabled={!airConditioningNeeded} onChange={(e) => updateAirConditioning(row.id, { customText: e.target.value })} />
+                      </Field>
+                      <Field label="數量">
                         <input className={numberInputClass} type="number" min="0" value={row.qty} disabled={!airConditioningNeeded} onChange={(e) => updateAirConditioning(row.id, { qty: Number(e.target.value) })} />
                       </Field>
-                      <Field label="低標單價">
-                        <input className={numberInputClass} type="number" min="0" value={row.low} disabled={!airConditioningNeeded} onChange={(e) => updateAirConditioning(row.id, { low: Number(e.target.value) })} />
+                      <Field label="單位">
+                        <input className={numberInputClass} value={row.unit} disabled={!airConditioningNeeded} onChange={(e) => updateAirConditioning(row.id, { unit: e.target.value })} />
                       </Field>
-                      <Field label="高標單價">
-                        <input className={numberInputClass} type="number" min="0" value={row.high} disabled={!airConditioningNeeded} onChange={(e) => updateAirConditioning(row.id, { high: Number(e.target.value) })} />
-                      </Field>
-                      <Field label="固定單價">
-                        <input className={numberInputClass} type="number" min="0" value={row.fixed} placeholder="選填" disabled={!airConditioningNeeded} onChange={(e) => updateAirConditioning(row.id, { fixed: e.target.value })} />
+                      <Field label="實際單價">
+                        <input className={numberInputClass} type="number" min="0" value={row.actualUnitPrice} placeholder="自行填入" disabled={!airConditioningNeeded} onChange={(e) => updateAirConditioning(row.id, { actualUnitPrice: e.target.value })} />
                       </Field>
                       <button className="rounded-lg border border-red-200 px-3 py-2 text-sm font-bold text-red-700 disabled:opacity-50" type="button" disabled={!airConditioningNeeded} onClick={() => setAirConditioningRows((rows) => rows.filter((item) => item.id !== row.id))}>刪除</button>
                     </div>
-                    <div className="mt-3 rounded-lg bg-cream px-3 py-3 text-sm text-stone-700">小計：<b>NT$ {moneyRange(row.subtotal)}</b></div>
+                    <div className="mt-3 rounded-lg bg-cream px-3 py-3 text-sm text-stone-700">
+                      <div>參考依據：<b>{referenceText(row.item)}</b></div>
+                      小計：<b>NT$ {moneyRange(row.subtotal)}</b>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1307,18 +1386,18 @@ function App() {
               </Field>
             </div>
             <div className="mt-4 grid gap-2 text-sm text-stone-700">
-              <SummaryLine label="櫃體工程" range={cabinetTotal} />
-              <SummaryLine label="木作工程" range={woodTotal} />
-              <SummaryLine label="地板工程" range={flooringTotal} />
-              <SummaryLine label="土水工程" range={masonryTotal} />
-              <SummaryLine label="保護工程" range={protectionTotal} />
-              <SummaryLine label="清運廢棄物" range={cleanupTotal} />
-              <SummaryLine label="水電工程" range={plumbingTotal} />
-              <SummaryLine label="油漆工程" range={paintingTotal} />
-              <SummaryLine label="空調工程" range={airConditioningTotal} />
+              {hasAmount(cabinetTotal) && <SummaryLine label="櫃體工程" range={cabinetTotal} />}
+              {hasAmount(woodTotal) && <SummaryLine label="木作工程" range={woodTotal} />}
+              {hasAmount(flooringTotal) && <SummaryLine label="地板工程" range={flooringTotal} />}
+              {hasAmount(masonryTotal) && <SummaryLine label="土水工程" range={masonryTotal} />}
+              {hasAmount(protectionTotal) && <SummaryLine label="保護工程" range={protectionTotal} />}
+              {hasAmount(cleanupTotal) && <SummaryLine label="清運廢棄物" range={cleanupTotal} />}
+              {hasAmount(plumbingTotal) && <SummaryLine label="水電工程" range={plumbingTotal} />}
+              {hasAmount(paintingTotal) && <SummaryLine label="油漆工程" range={paintingTotal} />}
+              {hasAmount(airConditioningTotal) && <SummaryLine label="空調工程" range={airConditioningTotal} />}
               <SummaryLine label="稅前工程總額" range={grandTotal} />
-              <SummaryLine label="監管費" range={managementTotal} />
-              <SummaryLine label="發票稅金" range={invoiceTotal} />
+              {managementRate > 0 && <SummaryLine label="監管費" range={managementTotal} />}
+              {invoiceNeeded && <SummaryLine label="發票稅金" range={invoiceTotal} />}
             </div>
             <button className="no-print mt-5 w-full rounded-lg bg-coffee px-4 py-4 text-base font-black text-white shadow-lg shadow-coffee/20" type="button" onClick={() => setShowResult(true)}>
               預計總金額
@@ -1347,7 +1426,7 @@ function App() {
           <div className="mt-5 overflow-x-auto rounded-lg border border-coffee/15 bg-white">
             <div className="border-b border-coffee/10 bg-wood/20 px-4 py-3">
               <h3 className="text-lg font-black text-coffee">各工種估價明細</h3>
-              <p className="mt-1 text-sm text-stone-600">依目前填寫內容產生，固定單價有填時會以單一金額列示。</p>
+              <p className="mt-1 text-sm text-stone-600">依目前填寫內容產生，所有項目會以你填入的實際單價列示。</p>
             </div>
             <table className="w-full min-w-[980px] border-collapse text-sm">
               <thead className="bg-cream text-left text-coffee">
@@ -1388,14 +1467,18 @@ function App() {
                   <td className="px-3 py-3 font-bold" colSpan="5">稅前工程總額</td>
                   <td className="px-3 py-3 text-right font-bold">NT$ {moneyRange(grandTotal)}</td>
                 </tr>
-                <tr>
-                  <td className="px-3 py-3 font-bold" colSpan="5">監管費{managementRate > 0 ? `（${managementPercent}%）` : ""}</td>
-                  <td className="px-3 py-3 text-right font-bold">NT$ {moneyRange(managementTotal)}</td>
-                </tr>
-                <tr>
-                  <td className="px-3 py-3 font-bold" colSpan="5">發票稅金{invoiceNeeded ? "（5%）" : "（未勾選）"}</td>
-                  <td className="px-3 py-3 text-right font-bold">NT$ {moneyRange(invoiceTotal)}</td>
-                </tr>
+                {managementRate > 0 && (
+                  <tr>
+                    <td className="px-3 py-3 font-bold" colSpan="5">監管費（{managementPercent}%）</td>
+                    <td className="px-3 py-3 text-right font-bold">NT$ {moneyRange(managementTotal)}</td>
+                  </tr>
+                )}
+                {invoiceNeeded && (
+                  <tr>
+                    <td className="px-3 py-3 font-bold" colSpan="5">發票稅金（5%）</td>
+                    <td className="px-3 py-3 text-right font-bold">NT$ {moneyRange(invoiceTotal)}</td>
+                  </tr>
+                )}
                 <tr className="bg-stone-950">
                   <td className="px-3 py-4 text-base font-black" colSpan="5">全部總額</td>
                   <td className="px-3 py-4 text-right text-base font-black">NT$ {moneyRange(finalTotal)}</td>
