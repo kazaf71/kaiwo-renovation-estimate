@@ -177,11 +177,29 @@ function Card({ title, children, defaultOpen = true }) {
 }
 
 function App() {
+  const [completionDate, setCompletionDate] = useDraftState("completionDate", "");
+  const estimateTerms = [
+    "估價單未列之工程項目，如有追加、減作或變更，另立追加工程單報價。",
+    "本報價單各工程項目以未稅金額列示。",
+    "本報價自報價日起有效30日，逾期如材料或人工成本調整，得重新報價。",
+    "拆除或施工後，如發現漏水、壁癌、管線老化、結構異常或其他事前無法確認之問題，相關修繕費用另行報價。",
+    "因業主變更、追加工程、材料延遲、社區施工限制或不可抗力因素影響施工，工期得依實際情況順延。",
+    "材料如遇停產、缺貨或交期異常，經雙方確認後得更換同等級材料，相關價差另行增減。",
+    "完工後由雙方進行驗收，如有屬本工程施工範圍之缺失，施工方於合理期限內進行修繕。",
+    "工程保固一年，限施工所造成之非人為瑕疵；正常耗損、使用不當、第三方施工或自行修改所造成之損壞，不在保固範圍內。",
+    "社區管理費、裝修保證金、政府規費、審查或專業簽證等費用，如未列於估價單內則另計。",
+    "工程款如逾期未支付，施工方得暫停施工，因此造成之工期延誤得順延。",
+    "本估價單、施工圖、追加工程單及雙方以書面或可供保存之訊息確認內容，均可作為施工及工程結算依據。",
+    "業主自行購買之材料、設備，或另行委託其他廠商施工，其品質、交期及保固由原供應商或施工廠商負責。"
+  ];
   const [paymentStages, setPaymentStages] = useDraftState("paymentStages", []);
   const paymentLines = paymentStages.filter((stage) => stage.name.trim()).map((stage) =>
     `付款條件：${stage.name.trim()}${stage.percent !== "" ? `，收取工程款 ${Number(stage.percent)}%` : ""}。`
   );
   const paymentTotal = paymentStages.filter((stage) => stage.name.trim()).reduce((sum, stage) => sum + Number(stage.percent || 0), 0);
+  const paymentOutput = paymentLines.length ? paymentLines : ["簽約訂金為工程款總額5%，其餘款項依雙方約定之工程進度節點支付。"];
+  const paymentNotes = ["付款方式", ...paymentOutput, ...(completionDate ? [`預計完工日：${completionDate}`] : [])];
+  const formalNotes = [...estimateTerms.map((term, i) => `${i + 1}. ${term}`), ...paymentNotes];
   const updatePaymentStage = (id, patch) => {
     setPaymentStages((stages) => stages.map((stage) => stage.id === id ? {...stage, ...patch} : stage));
   };
@@ -244,6 +262,7 @@ function App() {
   const [cleanupFixed, setCleanupFixed] = useDraftState("cleanupFixed", "");
   const [cleanupActualUnitPrice, setCleanupActualUnitPrice] = useDraftState("cleanupActualUnitPrice", "");
   const [invoiceNeeded, setInvoiceNeeded] = useDraftState("invoiceNeeded", false);
+  const finalTotalLabel = invoiceNeeded ? "含稅總額" : "未稅總額";
   const [comparisonSafeMode, setComparisonSafeMode] = useDraftState("comparisonSafeMode", false);
   const [managementPercent, setManagementPercent] = useDraftState("managementPercent", "");
   const [showResult, setShowResult] = React.useState(false);
@@ -541,13 +560,13 @@ function App() {
       `稅前工程總額：NT$ ${moneyRange(grandTotal)}`,
       ...(managementRate > 0 ? [`監管費（${managementPercent}%）：NT$ ${moneyRange(managementTotal)}`] : []),
       ...(invoiceNeeded ? [`發票稅金（5%）：NT$ ${moneyRange(invoiceTotal)}`] : []),
-      `全部總額：NT$ ${moneyRange(finalTotal)}`,
-      ...paymentLines,
+      `${finalTotalLabel}：NT$ ${moneyRange(finalTotal)}`,
+      ...paymentNotes,
       ``,
       `免責說明：此為線上初估金額，實際報價仍需依現場丈量、材質選擇、施工條件與圖面內容為準。`
     ];
     return lines.join("\n");
-  }, [paymentStages, summaryTitle, projectLocationText, customTrades, ping, condition, selectedAreas, cabinetTotal, woodTotal, floorNeeded, flooringTotal, masonryTotal, masonryTotals, protectionTotal, protectionText, protectionQty, protectionUnit, protectionActualUnitPrice, cleanupTotal, cleanupText, cleanupQty, cleanupUnit, cleanupActualUnitPrice, plumbingBaseTotal, plumbingExtraTotal, plumbingTotal, plumbingExtraTotals, paintingBaseTotal, paintingExtraTotal, paintingTotal, paintingExtraTotals, airConditioningTotal, airConditioningTotals, estimateNoteText, comparisonSafeMode, grandTotal, managementRate, managementPercent, managementTotal, invoiceNeeded, invoiceTotal, finalTotal]);
+  }, [completionDate, paymentStages, summaryTitle, projectLocationText, customTrades, ping, condition, selectedAreas, cabinetTotal, woodTotal, floorNeeded, flooringTotal, masonryTotal, masonryTotals, protectionTotal, protectionText, protectionQty, protectionUnit, protectionActualUnitPrice, cleanupTotal, cleanupText, cleanupQty, cleanupUnit, cleanupActualUnitPrice, plumbingBaseTotal, plumbingExtraTotal, plumbingTotal, plumbingExtraTotals, paintingBaseTotal, paintingExtraTotal, paintingTotal, paintingExtraTotals, airConditioningTotal, airConditioningTotals, estimateNoteText, comparisonSafeMode, grandTotal, managementRate, managementPercent, managementTotal, invoiceNeeded, invoiceTotal, finalTotal]);
 
   const rawEstimateRows = [
     ...customTrades.flatMap((trade) => trade.rows.map((row) => ({trade: trade.name.trim() || "自訂工程", area: row.area || "全室", name: row.name.trim() || "未命名項目", note: row.note || "", qty: row.qty, unit: row.unit, unitPrice: actualUnitPriceText(row.price), subtotal: actualPricedPair(row.qty, row.price)}))),
@@ -789,19 +808,12 @@ function App() {
       ]));
     });
     tableRows.push(odsCellsRow([
-      { value: "全部總額", span: 4, style: "grandLabel" },
+      { value: finalTotalLabel, span: 4, style: "grandLabel" },
       { value: `NT$ ${moneyRange(finalTotal)}`, style: "grandAmount" },
       { value: "", style: "grand" }
     ]));
     tableRows.push(odsRow(["", "", "", "", "", ""], "spacer"));
-    [
-      "估價單項目外之工程，已追加工程單另立項目報價。",
-      "如需開立發票，以工程總金額5%為發票稅金。",
-      "監管費依稅前工程總額計算，不以含稅後金額計算。",
-      ...paymentLines,
-      "報價單依日期保留1個月。",
-      "責任保修非人為損壞保固一年。"
-    ].forEach((note) => tableRows.push(odsRow([{ value: note, span: 6, style: "note" }])));
+    formalNotes.forEach((note) => tableRows.push(odsRow([{ value: note, span: 6, style: "note" }])));
 
     const contentXml = `<?xml version="1.0" encoding="UTF-8"?>
 <office:document-content
@@ -914,18 +926,11 @@ function App() {
       rows.push(`<tr>${htmlCell(`${group.trade} 小計`, "td", 'colspan="4" class="subtotal"')}${htmlCell(`NT$ ${moneyRange(group.subtotal)}`, "td", 'class="subtotal amount"')}${htmlCell("", "td", 'class="subtotal"')}</tr>`);
     });
 
-    [...totalRows, ["全部總額", finalTotal]].forEach(([label, total]) => {
+    [...totalRows, [finalTotalLabel, finalTotal]].forEach(([label, total]) => {
       rows.push(`<tr>${htmlCell(label, "td", 'colspan="4" class="total"')}${htmlCell(`NT$ ${moneyRange(total)}`, "td", 'class="total amount"')}${htmlCell("", "td", 'class="total"')}</tr>`);
     });
 
-    [
-      "估價單項目外之工程，已追加工程單另立項目報價。",
-      "如需開立發票，以工程總金額5%為發票稅金。",
-      "監管費依稅前工程總額計算，不以含稅後金額計算。",
-      ...paymentLines,
-      "報價單依日期保留1個月。",
-      "責任保修非人為損壞保固一年。"
-    ].forEach((note) => rows.push(`<tr>${htmlCell(note, "td", 'colspan="6" class="note"')}</tr>`));
+    formalNotes.forEach((note) => rows.push(`<tr>${htmlCell(note, "td", 'colspan="6" class="note"')}</tr>`));
 
     const html = `<!doctype html>
 <html>
@@ -965,16 +970,9 @@ function App() {
 
     const now = new Date();
     const today = now.toLocaleDateString("zh-TW");
-    const terms = [
-      "估價單項目外之工程，已追加工程單另立項目報價。",
-      "如需開立發票，以工程總金額 5% 為發票稅金。",
-      "監管費依稅前工程總額計算，不以含稅後金額計算。",
-      ...paymentLines,
-      "報價單依日期保留 1 個月。",
-      "責任保修非人為損壞保固一年。"
-    ];
+    const terms = estimateTerms;
     const pages = paginateEstimateGroupsForPdf(estimateGroups, 24);
-    if (shouldAppendPdfSummaryPage(pages.at(-1), 24, 10 + Math.max(0, paymentLines.length - 5))) pages.push([]);
+    if (shouldAppendPdfSummaryPage(pages.at(-1), 24, 18 + Math.max(0, paymentOutput.length - 1))) pages.push([]);
 
     const host = document.createElement("div");
     host.setAttribute("aria-hidden", "true");
@@ -1009,10 +1007,10 @@ function App() {
           <table class="totals">
             <tbody>
               ${totalRows.map(([label, total]) => `<tr><td>${xmlEscape(label)}</td><td>NT$ ${xmlEscape(moneyRange(total))}</td></tr>`).join("")}
-              <tr class="grand"><td>全部總額</td><td>NT$ ${xmlEscape(moneyRange(finalTotal))}</td></tr>
+              <tr class="grand"><td>${xmlEscape(finalTotalLabel)}</td><td>NT$ ${xmlEscape(moneyRange(finalTotal))}</td></tr>
             </tbody>
           </table>
-          <section class="terms"><h2>估價條款與說明</h2>${terms.map((term, index) => `<p>${index + 1}. ${xmlEscape(term)}</p>`).join("")}</section>
+          <section class="terms"><h2>估價條款與說明</h2>${terms.map((term, index) => `<p>${index + 1}. ${xmlEscape(term)}</p>`).join("")}<h2>付款方式</h2>${paymentOutput.map((line) => `<p>${xmlEscape(line)}</p>`).join("")}${completionDate ? `<p>預計完工日：${xmlEscape(completionDate)}</p>` : ""}</section>
         ` : "";
         const pageHeader = pageIndex === 0 ? `
           <header class="pdf-head">
@@ -1109,7 +1107,7 @@ function App() {
       [`${group.trade}小計`, "", "", "", `NT$ ${moneyRange(group.subtotal)}`, ""].join("｜")
     ]),
     ...totalRows.map(([label, total]) => [label, "", "", "", `NT$ ${moneyRange(total)}`, ""].join("｜")),
-    ["全部總額", "", "", "", `NT$ ${moneyRange(finalTotal)}`, ""].join("｜")
+    [finalTotalLabel, "", "", "", `NT$ ${moneyRange(finalTotal)}`, ""].join("｜")
   ].join("\n");
 
   const copyDetail = async () => {
@@ -1676,6 +1674,7 @@ function App() {
                 <button type="button" title="刪除付款階段" aria-label="刪除付款階段" className="custom-add" onClick={() => setPaymentStages((stages) => stages.filter((item) => item.id !== stage.id))}>×</button>
               </div>)}
               <button type="button" className="custom-add" onClick={() => setPaymentStages((stages) => [...stages, {id: crypto.randomUUID(), name: "", percent: ""}])}>＋ 新增付款階段</button>
+              <Field label="預計完工日"><input type="date" className={fullTextInputClass} value={completionDate} onChange={(e) => setCompletionDate(e.target.value)} /></Field>
               <p role="status">付款比例合計：{Math.round(paymentTotal * 100) / 100}%{paymentLines.length > 0 && Math.abs(paymentTotal - 100) > 0.001 ? "（尚未合計 100%）" : ""}</p>
             </div>
           </Card>
@@ -1684,7 +1683,7 @@ function App() {
         <aside className="2xl:sticky 2xl:top-4">
           <div className="print-card rounded-lg border border-coffee/15 bg-creamSoft p-4 shadow-lg shadow-coffee/10">
             <p className="text-xs font-black uppercase tracking-normal text-cocoa">Live Estimate</p>
-            <h2 className="mt-1 text-2xl font-black text-coffee">全部總額</h2>
+            <h2 className="mt-1 text-2xl font-black text-coffee">{finalTotalLabel}</h2>
             <div className="mt-4 rounded-lg bg-wood/20 p-4">
               <PriceRange range={finalTotal} large />
             </div>
@@ -1808,7 +1807,7 @@ function App() {
                   </tr>
                 )}
                 <tr className="bg-stone-950">
-                  <td className="px-3 py-4 text-base font-black" colSpan="4">全部總額</td>
+                  <td className="px-3 py-4 text-base font-black" colSpan="4">{finalTotalLabel}</td>
                   <td className="px-3 py-4 text-right text-base font-black">NT$ {moneyRange(finalTotal)}</td>
                   <td className="px-3 py-4"></td>
                 </tr>
@@ -1862,7 +1861,7 @@ function App() {
                   </div>
                 )}
                 <div className="mt-2 flex items-center justify-between gap-3 border-t border-white/25 pt-3 text-base font-black">
-                  <span>全部總額</span><span>NT$ {moneyRange(finalTotal)}</span>
+                  <span>{finalTotalLabel}</span><span>NT$ {moneyRange(finalTotal)}</span>
                 </div>
               </div>
             </div>
