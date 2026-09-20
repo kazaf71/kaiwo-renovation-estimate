@@ -135,7 +135,12 @@ test("published app is labeled as the formal version", () => {
 
 test("PDF export provides a safe project-based filename and grouped pagination", () => {
   assert.equal(fs.existsSync("./pdf-export-utils.js"), true, "missing PDF export helper");
-  const { buildPdfFileName, paginateEstimateGroups } = require("./pdf-export-utils.js");
+  const {
+    buildPdfFileName,
+    paginateEstimateGroups,
+    paginateEstimateGroupsForPdf,
+    shouldAppendPdfSummaryPage
+  } = require("./pdf-export-utils.js");
 
   assert.equal(buildPdfFileName(" 王先生/新居 ", new Date("2026-09-20T00:00:00")), "楷沃裝修工程-王先生-新居-估價單-20260920.pdf");
   const pages = paginateEstimateGroups([{ trade: "木作工程", rows: Array.from({ length: 5 }, (_, index) => ({ name: `項目${index + 1}`, note: "" })) }], 3);
@@ -143,6 +148,21 @@ test("PDF export provides a safe project-based filename and grouped pagination",
   assert.equal(pages[0][0].trade, "木作工程");
   assert.equal(pages[1][0].continued, true);
   assert.equal(pages[1][0].showSubtotal, true);
+
+  const previewGroups = Array.from({ length: 6 }, (_, groupIndex) => ({
+    trade: `工種${groupIndex + 1}`,
+    subtotal: { low: 2000, high: 2000 },
+    rows: Array.from({ length: 2 }, (_, rowIndex) => ({ name: `項目${rowIndex + 1}` }))
+  }));
+  const previewPages = paginateEstimateGroupsForPdf(previewGroups, 24);
+  assert.equal(previewPages.length, 1, "six two-item trades should fill one PDF page");
+  assert.equal(shouldAppendPdfSummaryPage(previewPages.at(-1), 24, 10), true);
+
+  const singleTradePages = paginateEstimateGroupsForPdf([
+    { trade: "測試工程", subtotal: { low: 12000, high: 12000 }, rows: Array.from({ length: 12 }, (_, index) => ({ name: `項目${index + 1}` })) }
+  ], 24);
+  assert.equal(singleTradePages.length, 1);
+  assert.equal(shouldAppendPdfSummaryPage(singleTradePages.at(-1), 24, 10), false, "summary should use the remaining first-page space");
 });
 
 test("published app includes one-click PDF assets and control", () => {
@@ -150,12 +170,22 @@ test("published app includes one-click PDF assets and control", () => {
   const worker = fs.readFileSync("./sw.js", "utf8");
   const appSource = fs.readFileSync("./app.jsx", "utf8");
 
-  assert.match(index, /pdf-export-utils\.js\?v=1/);
+  assert.match(index, /pdf-export-utils\.js\?v=2/);
   assert.match(index, /html2canvas\.min\.js/);
   assert.match(index, /jspdf\.umd\.min\.js/);
-  assert.match(worker, /pdf-export-utils\.js\?v=1/);
+  assert.match(worker, /pdf-export-utils\.js\?v=2/);
   assert.match(worker, /html2canvas\.min\.js/);
   assert.match(worker, /jspdf\.umd\.min\.js/);
   assert.match(appSource, /下載 PDF/);
   assert.match(appSource, /downloadPdf/);
+});
+
+test("formal PDF fills the first page and uses a compact continuation header", () => {
+  const appSource = fs.readFileSync("./app.jsx", "utf8");
+
+  assert.match(appSource, /paginateEstimateGroupsForPdf\(estimateGroups, 24\)/);
+  assert.match(appSource, /pageIndex === 0/);
+  assert.match(appSource, /continuation-head/);
+  assert.match(appSource, /formalTitle.*（續）/);
+  assert.match(appSource, /第 \$\{pageIndex \+ 1\} \/ \$\{pages\.length\} 頁/);
 });

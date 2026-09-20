@@ -56,5 +56,60 @@
     return pages.length ? pages : [[]];
   };
 
-  return { buildPdfFileName, paginateEstimateGroups, safeFilePart };
+  const renderedPdfRows = (groups) => groups.reduce((total, group) => (
+    total + 1 + group.rows.length + (group.showSubtotal ? 1 : 0)
+  ), 0);
+
+  const paginateEstimateGroupsForPdf = (groups, maxRenderedRows = 24) => {
+    const capacity = Math.max(3, Number(maxRenderedRows) || 24);
+    const pages = [];
+    let page = [];
+    let usedRows = 0;
+
+    const finishPage = () => {
+      if (page.length) pages.push(page);
+      page = [];
+      usedRows = 0;
+    };
+
+    groups.forEach((group) => {
+      let offset = 0;
+      while (offset < group.rows.length) {
+        if (capacity - usedRows < 3) finishPage();
+        const availableAfterHeader = capacity - usedRows - 1;
+        const remaining = group.rows.length - offset;
+        const canFinish = remaining + 1 <= availableAfterHeader;
+        let take = canFinish ? remaining : Math.min(remaining, availableAfterHeader);
+        if (!canFinish && take === remaining && take > 1) take -= 1;
+
+        const rows = group.rows.slice(offset, offset + take);
+        const isLastFragment = offset + take >= group.rows.length;
+        page.push({
+          ...group,
+          rows,
+          continued: offset > 0,
+          showSubtotal: isLastFragment
+        });
+        usedRows += 1 + take + (isLastFragment ? 1 : 0);
+        offset += take;
+        if (!isLastFragment) finishPage();
+      }
+    });
+
+    finishPage();
+    return pages.length ? pages : [[]];
+  };
+
+  const shouldAppendPdfSummaryPage = (lastPageGroups, maxRenderedRows = 24, summaryRows = 10) => (
+    renderedPdfRows(lastPageGroups) + summaryRows > maxRenderedRows
+  );
+
+  return {
+    buildPdfFileName,
+    paginateEstimateGroups,
+    paginateEstimateGroupsForPdf,
+    renderedPdfRows,
+    safeFilePart,
+    shouldAppendPdfSummaryPage
+  };
 });

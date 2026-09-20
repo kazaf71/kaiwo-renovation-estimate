@@ -11,7 +11,11 @@ const {
   toEstimateDetailCells,
   toComparisonSafeRow
 } = window.KaiwoEstimateDisplay;
-const { buildPdfFileName, paginateEstimateGroups } = window.KaiwoPdfExport;
+const {
+  buildPdfFileName,
+  paginateEstimateGroupsForPdf,
+  shouldAppendPdfSummaryPage
+} = window.KaiwoPdfExport;
 pricing.brand.line = "@371leiqg";
 const draftKey = "kaiwo-estimate-trial-v1";
 let savedDraft = {};
@@ -157,7 +161,7 @@ function NoteField({ value, onChange, disabled = false }) {
 }
 
 const WorkspaceContext = React.createContext("基本資料");
-const workSections = ["基本資料", "需要估價的區域", "櫃體工程估價", "木作工程估價", "地板工程", "土水工程估價", "保護工程", "清運廢棄物工程", "水電工程估價", "油漆工程估價", "空調工程估價", "自訂工程"];
+const workSections = ["基本資料", "需要估價的區域", "櫃體工程估價", "木作工程估價", "地板工程", "土水工程估價", "保護工程", "清運廢棄物工程", "水電工程估價", "油漆工程估價", "空調工程估價", "自訂工程", "付款方式"];
 
 function Card({ title, children, defaultOpen = true }) {
   const active = React.useContext(WorkspaceContext);
@@ -173,6 +177,14 @@ function Card({ title, children, defaultOpen = true }) {
 }
 
 function App() {
+  const [paymentStages, setPaymentStages] = useDraftState("paymentStages", []);
+  const paymentLines = paymentStages.filter((stage) => stage.name.trim()).map((stage) =>
+    `付款條件：${stage.name.trim()}${stage.percent !== "" ? `，收取工程款 ${Number(stage.percent)}%` : ""}。`
+  );
+  const paymentTotal = paymentStages.filter((stage) => stage.name.trim()).reduce((sum, stage) => sum + Number(stage.percent || 0), 0);
+  const updatePaymentStage = (id, patch) => {
+    setPaymentStages((stages) => stages.map((stage) => stage.id === id ? {...stage, ...patch} : stage));
+  };
   const [activeSection, setActiveSection] = React.useState("基本資料");
   const [customTrades, setCustomTrades] = useDraftState("customTrades", []);
   const updateCustomTrade = (id, patch) => {
@@ -530,11 +542,12 @@ function App() {
       ...(managementRate > 0 ? [`監管費（${managementPercent}%）：NT$ ${moneyRange(managementTotal)}`] : []),
       ...(invoiceNeeded ? [`發票稅金（5%）：NT$ ${moneyRange(invoiceTotal)}`] : []),
       `全部總額：NT$ ${moneyRange(finalTotal)}`,
+      ...paymentLines,
       ``,
       `免責說明：此為線上初估金額，實際報價仍需依現場丈量、材質選擇、施工條件與圖面內容為準。`
     ];
     return lines.join("\n");
-  }, [summaryTitle, projectLocationText, customTrades, ping, condition, selectedAreas, cabinetTotal, woodTotal, floorNeeded, flooringTotal, masonryTotal, masonryTotals, protectionTotal, protectionText, protectionQty, protectionUnit, protectionActualUnitPrice, cleanupTotal, cleanupText, cleanupQty, cleanupUnit, cleanupActualUnitPrice, plumbingBaseTotal, plumbingExtraTotal, plumbingTotal, plumbingExtraTotals, paintingBaseTotal, paintingExtraTotal, paintingTotal, paintingExtraTotals, airConditioningTotal, airConditioningTotals, estimateNoteText, comparisonSafeMode, grandTotal, managementRate, managementPercent, managementTotal, invoiceNeeded, invoiceTotal, finalTotal]);
+  }, [paymentStages, summaryTitle, projectLocationText, customTrades, ping, condition, selectedAreas, cabinetTotal, woodTotal, floorNeeded, flooringTotal, masonryTotal, masonryTotals, protectionTotal, protectionText, protectionQty, protectionUnit, protectionActualUnitPrice, cleanupTotal, cleanupText, cleanupQty, cleanupUnit, cleanupActualUnitPrice, plumbingBaseTotal, plumbingExtraTotal, plumbingTotal, plumbingExtraTotals, paintingBaseTotal, paintingExtraTotal, paintingTotal, paintingExtraTotals, airConditioningTotal, airConditioningTotals, estimateNoteText, comparisonSafeMode, grandTotal, managementRate, managementPercent, managementTotal, invoiceNeeded, invoiceTotal, finalTotal]);
 
   const rawEstimateRows = [
     ...customTrades.flatMap((trade) => trade.rows.map((row) => ({trade: trade.name.trim() || "自訂工程", area: row.area || "全室", name: row.name.trim() || "未命名項目", note: row.note || "", qty: row.qty, unit: row.unit, unitPrice: actualUnitPriceText(row.price), subtotal: actualPricedPair(row.qty, row.price)}))),
@@ -785,10 +798,7 @@ function App() {
       "估價單項目外之工程，已追加工程單另立項目報價。",
       "如需開立發票，以工程總金額5%為發票稅金。",
       "監管費依稅前工程總額計算，不以含稅後金額計算。",
-      "簽約訂金為工程款總額35%進場給付。",
-      "工程進度6成，給付工程款總額65%。",
-      "工程完成，給付工程款總額95%。",
-      "驗收完成結清尾款5%。",
+      ...paymentLines,
       "報價單依日期保留1個月。",
       "責任保修非人為損壞保固一年。"
     ].forEach((note) => tableRows.push(odsRow([{ value: note, span: 6, style: "note" }])));
@@ -912,10 +922,7 @@ function App() {
       "估價單項目外之工程，已追加工程單另立項目報價。",
       "如需開立發票，以工程總金額5%為發票稅金。",
       "監管費依稅前工程總額計算，不以含稅後金額計算。",
-      "簽約訂金為工程款總額35%進場給付。",
-      "工程進度6成，給付工程款總額65%。",
-      "工程完成，給付工程款總額95%。",
-      "驗收完成結清尾款5%。",
+      ...paymentLines,
       "報價單依日期保留1個月。",
       "責任保修非人為損壞保固一年。"
     ].forEach((note) => rows.push(`<tr>${htmlCell(note, "td", 'colspan="6" class="note"')}</tr>`));
@@ -962,16 +969,12 @@ function App() {
       "估價單項目外之工程，已追加工程單另立項目報價。",
       "如需開立發票，以工程總金額 5% 為發票稅金。",
       "監管費依稅前工程總額計算，不以含稅後金額計算。",
-      "簽約訂金為工程款總額 35% 進場給付。",
-      "工程進度 6 成，給付工程款總額 65%。",
-      "工程完成，給付工程款總額 95%。",
-      "驗收完成結清尾款 5%。",
+      ...paymentLines,
       "報價單依日期保留 1 個月。",
       "責任保修非人為損壞保固一年。"
     ];
-    const pages = paginateEstimateGroups(estimateGroups, 8);
-    const lastItemCount = pages.at(-1).reduce((count, group) => count + group.rows.length, 0);
-    if (lastItemCount > 4) pages.push([]);
+    const pages = paginateEstimateGroupsForPdf(estimateGroups, 24);
+    if (shouldAppendPdfSummaryPage(pages.at(-1), 24, 10 + Math.max(0, paymentLines.length - 5))) pages.push([]);
 
     const host = document.createElement("div");
     host.setAttribute("aria-hidden", "true");
@@ -1011,10 +1014,29 @@ function App() {
           </table>
           <section class="terms"><h2>估價條款與說明</h2>${terms.map((term, index) => `<p>${index + 1}. ${xmlEscape(term)}</p>`).join("")}</section>
         ` : "";
+        const pageHeader = pageIndex === 0 ? `
+          <header class="pdf-head">
+            <span class="pdf-page-label">第 ${pageIndex + 1} / ${pages.length} 頁</span>
+            <div class="pdf-brand">${xmlEscape(pricing.brand.name)}｜${xmlEscape(pricing.brand.positioning)}</div>
+            <h1 class="pdf-title">${xmlEscape(formalTitle)}</h1>
+          </header>
+          <table class="pdf-meta"><tbody>
+            <tr><th>工程地點</th><td>${xmlEscape(projectLocationText)}</td><th>日期</th><td>${xmlEscape(today)}</td></tr>
+            <tr><th>工程項目</th><td>室內裝修工程</td><th>屋況</th><td>${xmlEscape(condition)}</td></tr>
+            <tr><th>案件名稱</th><td>${xmlEscape(projectName.trim() || "未填寫")}</td><th>聯絡方式</th><td>LINE ${xmlEscape(pricing.brand.line)}｜${xmlEscape(pricing.brand.phone)}</td></tr>
+          </tbody></table>
+        ` : `
+          <header class="continuation-head">
+            <h1>${xmlEscape(formalTitle)}（續）</h1>
+            <span class="pdf-page-label">第 ${pageIndex + 1} / ${pages.length} 頁</span>
+          </header>
+        `;
 
         sheet.innerHTML = `
           <style>
             .pdf-head { border-bottom: 3px solid #3f3f3f; padding-bottom: 14px; }
+            .continuation-head { border-bottom: 2px solid #555; padding-bottom: 10px; display: flex; align-items: baseline; justify-content: space-between; gap: 20px; }
+            .continuation-head h1 { margin: 0; font-size: 15px; font-weight: 900; color: #171717; }
             .pdf-brand { font-size: 13px; font-weight: 700; color: #555; }
             .pdf-title { margin: 5px 0 0; font-size: 25px; font-weight: 900; color: #171717; }
             .pdf-meta { width: 100%; margin: 14px 0; border-collapse: collapse; table-layout: fixed; }
@@ -1022,7 +1044,7 @@ function App() {
             .pdf-meta th { width: 74px; background: #e4e4e4; color: #222; }
             .pdf-page-label { float: right; color: #666; font-size: 10px; }
             .detail { width: 100%; border-collapse: collapse; table-layout: fixed; }
-            .detail th, .detail td { border: 1px solid #b8b8b8; padding: 7px 6px; font-size: 10.5px; line-height: 1.45; vertical-align: top; word-break: break-word; }
+            .detail th, .detail td { border: 1px solid #b8b8b8; padding: 6px; font-size: 10px; line-height: 1.35; vertical-align: top; word-break: break-word; }
             .detail thead th { background: #3f3f3f; color: #fff; text-align: left; }
             .detail .trade td { background: #d4d4d4; font-weight: 900; color: #111; }
             .detail .subtotal td { background: #ededed; font-weight: 800; text-align: right; }
@@ -1037,16 +1059,7 @@ function App() {
             .terms p { margin: 2px 0; font-size: 9.5px; line-height: 1.45; }
             .pdf-footer { margin-top: auto; border-top: 1px solid #aaa; padding-top: 8px; color: #555; font-size: 9px; display: flex; justify-content: space-between; }
           </style>
-          <header class="pdf-head">
-            <span class="pdf-page-label">第 ${pageIndex + 1} / ${pages.length} 頁</span>
-            <div class="pdf-brand">${xmlEscape(pricing.brand.name)}｜${xmlEscape(pricing.brand.positioning)}</div>
-            <h1 class="pdf-title">${xmlEscape(formalTitle)}</h1>
-          </header>
-          <table class="pdf-meta"><tbody>
-            <tr><th>工程地點</th><td>${xmlEscape(projectLocationText)}</td><th>日期</th><td>${xmlEscape(today)}</td></tr>
-            <tr><th>工程項目</th><td>室內裝修工程</td><th>屋況</th><td>${xmlEscape(condition)}</td></tr>
-            <tr><th>案件名稱</th><td>${xmlEscape(projectName.trim() || "未填寫")}</td><th>聯絡方式</th><td>LINE ${xmlEscape(pricing.brand.line)}｜${xmlEscape(pricing.brand.phone)}</td></tr>
-          </tbody></table>
+          ${pageHeader}
           ${pageGroups.length ? `
             <table class="detail">
               <colgroup>${estimateDetailColumnWidths.map((width) => `<col style="width:${width}">`).join("")}</colgroup>
@@ -1654,6 +1667,17 @@ function App() {
               </tbody></table></div>
               <button className="custom-add" type="button" onClick={() => updateCustomTrade(trade.id, {rows: [...trade.rows, {id: crypto.randomUUID(), name: '', area: '全室', qty: 1, unit: '式', price: '', note: ''}]})}>＋ 新增項目</button>
             </section>)}
+          </Card>
+          <Card title="付款方式">
+            <div className="grid gap-4">
+              {paymentStages.map((stage, index) => <div key={stage.id} className="grid gap-2" style={{gridTemplateColumns: "minmax(0, 1fr) 90px 40px", alignItems: "end"}}>
+                <Field label={`付款階段 ${index + 1}`}><input className={fullTextInputClass} value={stage.name} placeholder="例如：木工進場" onChange={(event) => updatePaymentStage(stage.id, {name: event.target.value})} /></Field>
+                <Field label="比例 %"><input className={fullTextInputClass} type="number" min="0" max="100" step="0.1" value={stage.percent} onChange={(event) => updatePaymentStage(stage.id, {percent: event.target.value === "" ? "" : Math.min(100, Math.max(0, Number(event.target.value)))})} /></Field>
+                <button type="button" title="刪除付款階段" aria-label="刪除付款階段" className="custom-add" onClick={() => setPaymentStages((stages) => stages.filter((item) => item.id !== stage.id))}>×</button>
+              </div>)}
+              <button type="button" className="custom-add" onClick={() => setPaymentStages((stages) => [...stages, {id: crypto.randomUUID(), name: "", percent: ""}])}>＋ 新增付款階段</button>
+              <p role="status">付款比例合計：{Math.round(paymentTotal * 100) / 100}%{paymentLines.length > 0 && Math.abs(paymentTotal - 100) > 0.001 ? "（尚未合計 100%）" : ""}</p>
+            </div>
           </Card>
         </section>
 
