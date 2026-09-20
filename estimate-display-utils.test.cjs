@@ -2,6 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const {
+  buildPaymentLines,
   buildEstimateTitles,
   estimateDetailColumnWidths,
   estimateDetailHeaders,
@@ -21,6 +22,17 @@ const sourceRow = {
   unitPrice: "500元",
   subtotal: { low: 2000, high: 2000 }
 };
+
+test("payment stages are consecutively numbered after blanks and deletions", () => {
+  const stages = [{name:"簽約",percent:5},{name:" ",percent:10},{name:"木工進場",percent:30},{name:"尾款",percent:""}];
+  assert.deepEqual(buildPaymentLines(stages), ["第一期款項：簽約，收取總金額的 5%。", "第二期款項：木工進場，收取總金額的 30%。", "第三期款項：尾款。"]);
+  assert.equal(buildPaymentLines(stages.slice(2))[0], "第一期款項：木工進場，收取總金額的 30%。");
+  assert.deepEqual(buildPaymentLines([]), []);
+  const many = buildPaymentLines(Array.from({length:21}, () => ({name:"施工",percent:1})));
+  assert.match(many[9], /^第十期款項/);
+  assert.match(many[10], /^第十一期款項/);
+  assert.match(many[20], /^第二十一期款項/);
+});
 
 test("normal mode preserves quantity, unit and unit price", () => {
   const result = toComparisonSafeRow(sourceRow, false, "NT$ 2,000元");

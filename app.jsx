@@ -2,6 +2,7 @@ const pricing = JSON.parse(document.querySelector("#pricing-data").textContent);
 
 const { cleanNote, noteLine } = window.KaiwoNotes;
 const {
+  buildPaymentLines,
   buildEstimateTitles,
   estimateDetailColumnWidths,
   estimateDetailHeaders,
@@ -193,9 +194,7 @@ function App() {
     "業主自行購買之材料、設備，或另行委託其他廠商施工，其品質、交期及保固由原供應商或施工廠商負責。"
   ];
   const [paymentStages, setPaymentStages] = useDraftState("paymentStages", []);
-  const paymentLines = paymentStages.filter((stage) => stage.name.trim()).map((stage) =>
-    `付款條件：${stage.name.trim()}${stage.percent !== "" ? `，收取工程款 ${Number(stage.percent)}%` : ""}。`
-  );
+  const paymentLines = buildPaymentLines(paymentStages);
   const paymentTotal = paymentStages.filter((stage) => stage.name.trim()).reduce((sum, stage) => sum + Number(stage.percent || 0), 0);
   const paymentOutput = paymentLines.length ? paymentLines : ["簽約訂金為工程款總額5%，其餘款項依雙方約定之工程進度節點支付。"];
   const paymentNotes = ["付款方式", ...paymentOutput, ...(completionDate ? [`預計完工日：${completionDate}`] : [])];
@@ -972,7 +971,7 @@ function App() {
     const today = now.toLocaleDateString("zh-TW");
     const terms = estimateTerms;
     const pages = paginateEstimateGroupsForPdf(estimateGroups, 24);
-    if (shouldAppendPdfSummaryPage(pages.at(-1), 24, 18 + Math.max(0, paymentOutput.length - 1))) pages.push([]);
+    if (shouldAppendPdfSummaryPage(pages.at(-1), 24, 18 + Math.max(0, Math.ceil(paymentOutput.length / 2) - 1))) pages.push([]);
 
     const host = document.createElement("div");
     host.setAttribute("aria-hidden", "true");
@@ -1010,7 +1009,7 @@ function App() {
               <tr class="grand"><td>${xmlEscape(finalTotalLabel)}</td><td>NT$ ${xmlEscape(moneyRange(finalTotal))}</td></tr>
             </tbody>
           </table>
-          <section class="terms"><h2>估價條款與說明</h2>${terms.map((term, index) => `<p>${index + 1}. ${xmlEscape(term)}</p>`).join("")}<h2>付款方式</h2>${paymentOutput.map((line) => `<p>${xmlEscape(line)}</p>`).join("")}${completionDate ? `<p>預計完工日：${xmlEscape(completionDate)}</p>` : ""}</section>
+          <section class="terms"><h2>估價條款與說明</h2>${terms.map((term, index) => `<p>${index + 1}. ${xmlEscape(term)}</p>`).join("")}<h2 class="payment-title">付款方式</h2><div class="payment-grid">${paymentOutput.map((line) => `<p>${xmlEscape(line)}</p>`).join("")}</div>${completionDate ? `<p>預計完工日：${xmlEscape(completionDate)}</p>` : ""}</section>
         ` : "";
         const pageHeader = pageIndex === 0 ? `
           <header class="pdf-head">
@@ -1055,6 +1054,9 @@ function App() {
             .terms { margin-top: 15px; border-top: 2px solid #777; padding-top: 10px; }
             .terms h2 { margin: 0 0 6px; font-size: 12px; }
             .terms p { margin: 2px 0; font-size: 9.5px; line-height: 1.45; }
+            .terms .payment-title { margin-top: 8px; }
+            .payment-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 16px; }
+            .payment-grid p { overflow-wrap: anywhere; }
             .pdf-footer { margin-top: auto; border-top: 1px solid #aaa; padding-top: 8px; color: #555; font-size: 9px; display: flex; justify-content: space-between; }
           </style>
           ${pageHeader}

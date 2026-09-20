@@ -38,6 +38,14 @@
   };
 
   return {
+    buildPaymentLines: (stages) => stages.filter((stage) => stage.name.trim()).map((stage, index) => {
+      const number = index + 1;
+      const digits = "零一二三四五六七八九";
+      const ordinal = number < 10 ? digits[number] : number < 100
+        ? `${number < 20 ? "" : digits[Math.floor(number / 10)]}十${number % 10 ? digits[number % 10] : ""}`
+        : String(number);
+      return `第${ordinal}期款項：${stage.name.trim()}${stage.percent !== "" ? `，收取總金額的 ${Number(stage.percent)}%` : ""}。`;
+    }),
     buildEstimateTitles,
     estimateDetailColumnWidths,
     estimateDetailHeaders,
