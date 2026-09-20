@@ -37,13 +37,17 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body class="bg-cream text-stone-900">
+  <script>
+    const selectedTheme = new URLSearchParams(window.location.search).get("theme");
+    document.body.classList.add(selectedTheme === "comfort" ? "theme-comfort" : "theme-monochrome");
+  </script>
   <script type="application/json" id="pricing-data">
     {
       "brand": {
         "name": "楷沃裝修工程",
         "positioning": "3D設計 × 工程規劃 × 統包整合",
         "serviceArea": "台北・新北・桃園",
-        "line": "@416ukqvs",
+        "line": "@371leiqg",
         "phone": "0968-820-326"
       },
       "areas": [
@@ -61,14 +65,23 @@
         "走道／儲藏區"
       ],
       "cabinetTypes": [
-        { "id": "lowA", "name": "矮櫃A", "height": "60～90cm", "low": 4500, "high": 5500 },
-        { "id": "lowB", "name": "矮櫃B", "height": "90～120cm", "low": 4900, "high": 6100 },
+        { "id": "low", "name": "矮櫃", "height": "60～120cm", "low": 4500, "high": 6100 },
         { "id": "middle", "name": "中櫃", "height": "120～180cm", "low": 5700, "high": 6600 },
         { "id": "tall", "name": "高櫃", "height": "180～240cm", "low": 7300, "high": 8500 },
         { "id": "extraTall", "name": "加高櫃", "height": "240～280cm", "low": 8800, "high": 10500 },
         { "id": "display", "name": "開放展示櫃", "height": "180～210cm", "low": 6500, "high": 7100 },
-        { "id": "furniture", "name": "電視櫃／書桌／臥榻／妝台／床頭櫃", "height": "依設計", "low": 4300, "high": 4850 },
+        { "id": "tvCabinet", "name": "電視櫃", "height": "依設計", "low": 4300, "high": 4850 },
+        { "id": "desk", "name": "書桌", "height": "依設計", "low": 4300, "high": 4850 },
+        { "id": "daybed", "name": "臥榻", "height": "依設計", "low": 4300, "high": 4850 },
+        { "id": "vanity", "name": "妝台", "height": "依設計", "low": 4300, "high": 4850 },
+        { "id": "headboardCabinet", "name": "床頭櫃", "height": "依設計", "low": 4300, "high": 4850 },
+        { "id": "upperLowerCabinet", "name": "上下櫃", "height": "依設計", "low": 4300, "high": 4850 },
         { "id": "shoe", "name": "鞋櫃", "height": "210～240cm", "low": 7300, "high": 8500 }
+      ],
+      "legacyCabinetTypes": [
+        { "id": "furniture", "name": "舊版綜合櫃體", "height": "依設計", "low": 4300, "high": 4850 },
+        { "id": "lowA", "name": "矮櫃", "height": "60～90cm", "low": 4500, "high": 5500 },
+        { "id": "lowB", "name": "矮櫃", "height": "90～120cm", "low": 4900, "high": 6100 }
       ],
       "woodworkItems": [
         { "id": "flatCeiling", "name": "平釘天花板", "unit": "坪", "low": 3400, "high": 3800 },
@@ -188,11 +201,13 @@
 
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="note-utils.js"></script>
+  <script src="estimate-display-utils.js?v=8"></script>
   <script src="vendor/jszip.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script type="text/babel" src="app.jsx"></script>
+  <script type="text/babel" src="app.jsx?v=14"></script>
   <script>
-    if ("serviceWorker" in navigator) {
+    if ("serviceWorker" in navigator && location.hostname !== "127.0.0.1" && location.hostname !== "localhost") {
       window.addEventListener("load", () => {
         navigator.serviceWorker.register("sw.js").catch(() => {});
       });
