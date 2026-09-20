@@ -11,6 +11,7 @@ const {
   toEstimateDetailCells,
   toComparisonSafeRow
 } = window.KaiwoEstimateDisplay;
+const { buildPdfFileName, paginateEstimateGroups } = window.KaiwoPdfExport;
 pricing.brand.line = "@371leiqg";
 const draftKey = "kaiwo-estimate-trial-v1";
 let savedDraft = {};
@@ -235,6 +236,7 @@ function App() {
   const [managementPercent, setManagementPercent] = useDraftState("managementPercent", "");
   const [showResult, setShowResult] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
+  const [pdfDownloading, setPdfDownloading] = React.useState(false);
   const [cabinetRows, setCabinetRows] = useDraftState("cabinetRows", []);
   const [woodRows, setWoodRows] = useDraftState("woodRows", []);
   const [plumbingExtras, setPlumbingExtras] = useDraftState("plumbingExtras", []);
@@ -948,6 +950,143 @@ function App() {
     URL.revokeObjectURL(url);
   };
 
+  const downloadPdf = async () => {
+    if (!window.html2canvas || !window.jspdf?.jsPDF) {
+      window.alert("PDF 產生器尚未載入，請重新整理頁面後再試一次。");
+      return;
+    }
+
+    const now = new Date();
+    const today = now.toLocaleDateString("zh-TW");
+    const terms = [
+      "估價單項目外之工程，已追加工程單另立項目報價。",
+      "如需開立發票，以工程總金額 5% 為發票稅金。",
+      "監管費依稅前工程總額計算，不以含稅後金額計算。",
+      "簽約訂金為工程款總額 35% 進場給付。",
+      "工程進度 6 成，給付工程款總額 65%。",
+      "工程完成，給付工程款總額 95%。",
+      "驗收完成結清尾款 5%。",
+      "報價單依日期保留 1 個月。",
+      "責任保修非人為損壞保固一年。"
+    ];
+    const pages = paginateEstimateGroups(estimateGroups, 8);
+    const lastItemCount = pages.at(-1).reduce((count, group) => count + group.rows.length, 0);
+    if (lastItemCount > 4) pages.push([]);
+
+    const host = document.createElement("div");
+    host.setAttribute("aria-hidden", "true");
+    host.style.cssText = "position:fixed;left:-12000px;top:0;width:794px;background:#fff;z-index:-1;";
+    document.body.appendChild(host);
+    setPdfDownloading(true);
+
+    try {
+      const pdf = new window.jspdf.jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
+      for (let pageIndex = 0; pageIndex < pages.length; pageIndex += 1) {
+        const pageGroups = pages[pageIndex];
+        const includeSummary = pageIndex === pages.length - 1;
+        const sheet = document.createElement("section");
+        sheet.style.cssText = "box-sizing:border-box;width:794px;min-height:1123px;padding:34px;background:#fff;color:#252525;font-family:'Microsoft JhengHei','Noto Sans TC',Arial,sans-serif;display:flex;flex-direction:column;";
+
+        const tableRows = pageGroups.flatMap((group) => {
+          const sectionTitle = `${group.trade}${group.continued ? "（續）" : ""}`;
+          const rows = [
+            `<tr class="trade"><td colspan="6">${xmlEscape(sectionTitle)}</td></tr>`,
+            ...group.rows.map((row) => {
+              const cells = toEstimateDetailCells(row, `NT$ ${moneyRange(row.subtotal)}`, false);
+              return `<tr>${cells.map((value, index) => `<td class="${index === 4 ? "amount" : ""}">${xmlEscape(value)}</td>`).join("")}</tr>`;
+            })
+          ];
+          if (group.showSubtotal) {
+            rows.push(`<tr class="subtotal"><td colspan="4">${xmlEscape(group.trade)} 小計</td><td class="amount">NT$ ${xmlEscape(moneyRange(group.subtotal))}</td><td></td></tr>`);
+          }
+          return rows;
+        }).join("");
+
+        const totals = includeSummary ? `
+          <table class="totals">
+            <tbody>
+              ${totalRows.map(([label, total]) => `<tr><td>${xmlEscape(label)}</td><td>NT$ ${xmlEscape(moneyRange(total))}</td></tr>`).join("")}
+              <tr class="grand"><td>全部總額</td><td>NT$ ${xmlEscape(moneyRange(finalTotal))}</td></tr>
+            </tbody>
+          </table>
+          <section class="terms"><h2>估價條款與說明</h2>${terms.map((term, index) => `<p>${index + 1}. ${xmlEscape(term)}</p>`).join("")}</section>
+        ` : "";
+
+        sheet.innerHTML = `
+          <style>
+            .pdf-head { border-bottom: 3px solid #3f3f3f; padding-bottom: 14px; }
+            .pdf-brand { font-size: 13px; font-weight: 700; color: #555; }
+            .pdf-title { margin: 5px 0 0; font-size: 25px; font-weight: 900; color: #171717; }
+            .pdf-meta { width: 100%; margin: 14px 0; border-collapse: collapse; table-layout: fixed; }
+            .pdf-meta th, .pdf-meta td { border: 1px solid #bdbdbd; padding: 7px 8px; font-size: 11px; text-align: left; word-break: break-word; }
+            .pdf-meta th { width: 74px; background: #e4e4e4; color: #222; }
+            .pdf-page-label { float: right; color: #666; font-size: 10px; }
+            .detail { width: 100%; border-collapse: collapse; table-layout: fixed; }
+            .detail th, .detail td { border: 1px solid #b8b8b8; padding: 7px 6px; font-size: 10.5px; line-height: 1.45; vertical-align: top; word-break: break-word; }
+            .detail thead th { background: #3f3f3f; color: #fff; text-align: left; }
+            .detail .trade td { background: #d4d4d4; font-weight: 900; color: #111; }
+            .detail .subtotal td { background: #ededed; font-weight: 800; text-align: right; }
+            .detail .amount { text-align: right; font-weight: 700; }
+            .empty { border: 1px solid #bbb; padding: 24px; text-align: center; color: #666; font-size: 12px; }
+            .totals { width: 100%; margin-top: 15px; border-collapse: collapse; }
+            .totals td { border: 1px solid #777; padding: 8px 10px; font-size: 11px; font-weight: 700; }
+            .totals td:last-child { width: 190px; text-align: right; }
+            .totals .grand td { background: #2f2f2f; color: #fff; font-size: 13px; font-weight: 900; }
+            .terms { margin-top: 15px; border-top: 2px solid #777; padding-top: 10px; }
+            .terms h2 { margin: 0 0 6px; font-size: 12px; }
+            .terms p { margin: 2px 0; font-size: 9.5px; line-height: 1.45; }
+            .pdf-footer { margin-top: auto; border-top: 1px solid #aaa; padding-top: 8px; color: #555; font-size: 9px; display: flex; justify-content: space-between; }
+          </style>
+          <header class="pdf-head">
+            <span class="pdf-page-label">第 ${pageIndex + 1} / ${pages.length} 頁</span>
+            <div class="pdf-brand">${xmlEscape(pricing.brand.name)}｜${xmlEscape(pricing.brand.positioning)}</div>
+            <h1 class="pdf-title">${xmlEscape(formalTitle)}</h1>
+          </header>
+          <table class="pdf-meta"><tbody>
+            <tr><th>工程地點</th><td>${xmlEscape(projectLocationText)}</td><th>日期</th><td>${xmlEscape(today)}</td></tr>
+            <tr><th>工程項目</th><td>室內裝修工程</td><th>屋況</th><td>${xmlEscape(condition)}</td></tr>
+            <tr><th>案件名稱</th><td>${xmlEscape(projectName.trim() || "未填寫")}</td><th>聯絡方式</th><td>LINE ${xmlEscape(pricing.brand.line)}｜${xmlEscape(pricing.brand.phone)}</td></tr>
+          </tbody></table>
+          ${pageGroups.length ? `
+            <table class="detail">
+              <colgroup>${estimateDetailColumnWidths.map((width) => `<col style="width:${width}">`).join("")}</colgroup>
+              <thead><tr>${estimateDetailHeaders.map((header) => `<th>${xmlEscape(header)}</th>`).join("")}</tr></thead>
+              <tbody>${tableRows}</tbody>
+            </table>
+          ` : "<div class=\"empty\">本頁為估價總計與條款</div>"}
+          ${totals}
+          <footer class="pdf-footer"><span>${xmlEscape(pricing.brand.name)}｜LINE ${xmlEscape(pricing.brand.line)}｜${xmlEscape(pricing.brand.phone)}</span><span>${pageIndex + 1} / ${pages.length}</span></footer>
+        `;
+        host.replaceChildren(sheet);
+        if (document.fonts?.ready) await document.fonts.ready;
+        const canvas = await window.html2canvas(sheet, {
+          scale: 2,
+          backgroundColor: "#ffffff",
+          logging: false,
+          useCORS: true,
+          windowWidth: 794
+        });
+        if (pageIndex > 0) pdf.addPage("a4", "portrait");
+        const pageWidth = 210;
+        const pageHeight = 297;
+        let imageWidth = pageWidth;
+        let imageHeight = canvas.height * imageWidth / canvas.width;
+        if (imageHeight > pageHeight) {
+          imageHeight = pageHeight;
+          imageWidth = canvas.width * imageHeight / canvas.height;
+        }
+        pdf.addImage(canvas.toDataURL("image/jpeg", 0.94), "JPEG", (pageWidth - imageWidth) / 2, 0, imageWidth, imageHeight, undefined, "FAST");
+      }
+      pdf.save(buildPdfFileName(projectName, now));
+    } catch (error) {
+      console.error("PDF export failed", error);
+      window.alert("PDF 產生失敗，請重新整理頁面後再試一次。");
+    } finally {
+      host.remove();
+      setPdfDownloading(false);
+    }
+  };
+
   const detailText = [
     "各工種估價明細",
     estimateDetailHeaders.join("｜"),
@@ -1575,6 +1714,7 @@ function App() {
               <button className="rounded-md border border-coffee/20 bg-white px-3 py-2.5 text-sm font-bold text-coffee" type="button" onClick={copySummary}>{copied ? "已複製" : "複製文字"}</button>
               <button className="rounded-md border border-coffee/20 bg-white px-3 py-2.5 text-sm font-bold text-coffee" type="button" onClick={downloadOds}>下載 ODS</button>
               <button className="rounded-md border border-coffee/20 bg-white px-3 py-2.5 text-sm font-bold text-coffee" type="button" onClick={downloadExcel}>下載 Excel</button>
+              <button className="rounded-md border border-coffee/20 bg-white px-3 py-2.5 text-sm font-bold text-coffee disabled:cursor-wait disabled:opacity-60" type="button" disabled={pdfDownloading} onClick={downloadPdf}>{pdfDownloading ? "產生 PDF…" : "下載 PDF"}</button>
               <button className="rounded-md bg-coffee px-3 py-2.5 text-sm font-bold text-white" type="button" onClick={() => window.print()}>列印摘要</button>
             </div>
           </div>

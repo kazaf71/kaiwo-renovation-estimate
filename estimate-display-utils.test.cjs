@@ -132,3 +132,30 @@ test("published app is labeled as the formal version", () => {
   assert.equal(appSource.includes("工程報價 / 正式版"), true);
   assert.equal(appSource.includes("本機試用版"), false);
 });
+
+test("PDF export provides a safe project-based filename and grouped pagination", () => {
+  assert.equal(fs.existsSync("./pdf-export-utils.js"), true, "missing PDF export helper");
+  const { buildPdfFileName, paginateEstimateGroups } = require("./pdf-export-utils.js");
+
+  assert.equal(buildPdfFileName(" 王先生/新居 ", new Date("2026-09-20T00:00:00")), "楷沃裝修工程-王先生-新居-估價單-20260920.pdf");
+  const pages = paginateEstimateGroups([{ trade: "木作工程", rows: Array.from({ length: 5 }, (_, index) => ({ name: `項目${index + 1}`, note: "" })) }], 3);
+  assert.equal(pages.length, 2);
+  assert.equal(pages[0][0].trade, "木作工程");
+  assert.equal(pages[1][0].continued, true);
+  assert.equal(pages[1][0].showSubtotal, true);
+});
+
+test("published app includes one-click PDF assets and control", () => {
+  const index = fs.readFileSync("./index.html", "utf8");
+  const worker = fs.readFileSync("./sw.js", "utf8");
+  const appSource = fs.readFileSync("./app.jsx", "utf8");
+
+  assert.match(index, /pdf-export-utils\.js\?v=1/);
+  assert.match(index, /html2canvas\.min\.js/);
+  assert.match(index, /jspdf\.umd\.min\.js/);
+  assert.match(worker, /pdf-export-utils\.js\?v=1/);
+  assert.match(worker, /html2canvas\.min\.js/);
+  assert.match(worker, /jspdf\.umd\.min\.js/);
+  assert.match(appSource, /下載 PDF/);
+  assert.match(appSource, /downloadPdf/);
+});
