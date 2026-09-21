@@ -193,6 +193,8 @@
     }
     source.remove();
     pages.forEach((page, index) => {
+      const signatures = page.querySelector(".pdf-signatures");
+      if (signatures) signatures.style.cssText = "position:absolute;bottom:70px;left:34px;right:34px;margin-top:0;";
       page.querySelector(".pdf-page-label").textContent = `第 ${index + 1} / ${pages.length} 頁`;
       page.querySelector(".pdf-footer span:last-child").textContent = `${index + 1} / ${pages.length}`;
     });

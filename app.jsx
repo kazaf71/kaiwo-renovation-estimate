@@ -1014,7 +1014,7 @@ function App() {
         const pageHeader = pageIndex === 0 ? `
           <header class="pdf-head">
             <span class="pdf-page-label">第 ${pageIndex + 1} / ${pages.length} 頁</span>
-            <div class="pdf-brand">${xmlEscape(pricing.brand.name)}｜${xmlEscape(pricing.brand.positioning)}</div>
+            <div class="pdf-brand">${xmlEscape(pricing.brand.name)}｜統包整合 × 工程規劃</div>
             <h1 class="pdf-title">${xmlEscape(formalTitle)}</h1>
           </header>
           <table class="pdf-meta"><tbody>
