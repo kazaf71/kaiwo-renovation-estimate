@@ -18,15 +18,15 @@ test("filled notes are trimmed and appended", () => {
 test("offline app shell includes estimate helper scripts", () => {
   const serviceWorker = fs.readFileSync("./sw.js", "utf8");
   const index = fs.readFileSync("./index.html", "utf8");
-  assert.match(serviceWorker, /kaiwo-estimate-v20/);
-  assert.match(serviceWorker, /\/app\.jsx\?v=20/);
+  assert.match(serviceWorker, /kaiwo-estimate-v21/);
+  assert.match(serviceWorker, /\/app\.jsx\?v=21/);
   assert.match(serviceWorker, /\/note-utils\.js\?v=15/);
   assert.match(serviceWorker, /\/estimate-display-utils\.js\?v=9/);
   assert.match(serviceWorker, /\/pdf-export-utils\.js\?v=3/);
   assert.match(index, /estimate-display-utils\.js\?v=9/);
   assert.match(index, /note-utils\.js\?v=15/);
   assert.match(index, /pdf-export-utils\.js\?v=3/);
-  assert.match(index, /app\.jsx\?v=20/);
+  assert.match(index, /app\.jsx\?v=21/);
 });
 
 test("estimate details provide shared desktop and mobile layouts", () => {

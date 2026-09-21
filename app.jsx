@@ -1071,7 +1071,7 @@ function App() {
             </table>
           ` : "<div class=\"empty\">本頁為估價總計與條款</div>"}
           ${totals}
-          <section class="pdf-signatures"><div>施工方簽名：<span class="signature-line">&nbsp;</span><br>簽名日期：<span class="signature-line">&nbsp;</span></div><div>委託方簽名：<span class="signature-line">&nbsp;</span><br>簽名日期：<span class="signature-line">&nbsp;</span></div></section>
+          <section class="pdf-signatures"><div>施工方簽名：<span class="signature-line">&nbsp;</span></div><div>委託方簽名：<span class="signature-line">&nbsp;</span><br>簽名日期：<span class="signature-line">&nbsp;</span></div></section>
           <footer class="pdf-footer"><span>${xmlEscape(pricing.brand.name)}｜LINE ${xmlEscape(pricing.brand.line)}｜${xmlEscape(pricing.brand.phone)}</span><span>${pageIndex + 1} / ${pages.length}</span></footer>
         `;
         host.replaceChildren(sheet);
