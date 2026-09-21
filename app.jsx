@@ -1014,8 +1014,8 @@ function App() {
         const pageHeader = pageIndex === 0 ? `
           <header class="pdf-head">
             <span class="pdf-page-label">第 ${pageIndex + 1} / ${pages.length} 頁</span>
-            <div class="pdf-brand">${xmlEscape(pricing.brand.name)}｜統包整合 × 工程規劃</div>
-            <h1 class="pdf-title">${xmlEscape(formalTitle)}</h1>
+            <div class="pdf-brand">楷沃室內裝修有限公司 | 統包整合 × 工程規劃</div>
+            <h1 class="pdf-title">裝修工程 估價表</h1>
           </header>
           <table class="pdf-meta"><tbody>
             <tr><th>工程地點</th><td>${xmlEscape(projectLocationText)}</td><th>日期</th><td>${xmlEscape(today)}</td></tr>
@@ -1072,7 +1072,7 @@ function App() {
           ` : "<div class=\"empty\">本頁為估價總計與條款</div>"}
           ${totals}
           <section class="pdf-signatures"><div>施工方簽名：<span class="signature-line">&nbsp;</span></div><div>委託方簽名：<span class="signature-line">&nbsp;</span><br>簽名日期：<span class="signature-line">&nbsp;</span></div></section>
-          <footer class="pdf-footer"><span>${xmlEscape(pricing.brand.name)}｜LINE ${xmlEscape(pricing.brand.line)}｜${xmlEscape(pricing.brand.phone)}</span><span>${pageIndex + 1} / ${pages.length}</span></footer>
+          <footer class="pdf-footer"><span>楷沃室內裝修有限公司 | LINE ${xmlEscape(pricing.brand.line)} | ${xmlEscape(pricing.brand.phone)}</span><span>${pageIndex + 1} / ${pages.length}</span></footer>
         `;
         host.replaceChildren(sheet);
         if (document.fonts?.ready) await document.fonts.ready;
