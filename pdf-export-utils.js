@@ -104,7 +104,103 @@
     renderedPdfRows(lastPageGroups) + summaryRows > maxRenderedRows
   );
 
+  const paginateRenderedPdf = (source) => {
+    const host = source.parentNode;
+    const pages = [];
+    const style = source.querySelector("style");
+    const footer = source.querySelector(".pdf-footer");
+    const units = [];
+    for (const child of source.children) {
+      if (child === style || child === footer) continue;
+      if (child.matches(".detail")) {
+        const rows = Array.from(child.tBodies[0].rows);
+        for (let i = 0; i < rows.length; i++) {
+          const group = [rows[i]];
+          if (rows[i].matches(".trade") && rows[i + 1]) group.push(rows[++i]);
+          units.push({ table: child, rows: group });
+        }
+      } else if (child.matches(".terms")) {
+        const parts = Array.from(child.children);
+        for (let i = 0; i < parts.length; i++) {
+          const wrapper = child.cloneNode(false);
+          wrapper.style.cssText = "margin:0;border:0;padding:0;";
+          wrapper.append(parts[i].cloneNode(true));
+          if (parts[i].tagName === "H2" && parts[i + 1]) wrapper.append(parts[++i].cloneNode(true));
+          units.push({ node: wrapper });
+        }
+      } else units.push({ node: child });
+    }
+    // Keep the final payment summary and signatures together when they fit a page.
+    const paymentIndex = units.findIndex((unit) => unit.node?.querySelector(".payment-title"));
+    if (paymentIndex >= 0) {
+      const closing = document.createElement("div");
+      units.slice(paymentIndex).forEach((unit) => closing.append(unit.node.cloneNode(true)));
+      source.append(closing);
+      if (closing.getBoundingClientRect().height < 850) units.splice(paymentIndex, units.length - paymentIndex, { node: closing.cloneNode(true) });
+      closing.remove();
+    }
+    let content, currentTable;
+    const newPage = () => {
+      const page = source.cloneNode(false);
+      page.style.cssText = source.style.cssText + ";height:1123px;min-height:1123px;position:relative;display:block;";
+      page.append(style.cloneNode(true));
+      content = document.createElement("div");
+      content.style.cssText = "display:flow-root;";
+      page.append(content);
+      if (pages.length) {
+        const header = document.createElement("header");
+        header.className = "continuation-head";
+        const title = document.createElement("h1");
+        title.textContent = source.querySelector(".pdf-title").textContent + "（續）";
+        const label = document.createElement("span");
+        label.className = "pdf-page-label";
+        header.append(title, label);
+        content.append(header);
+      }
+      const pageFooter = footer.cloneNode(true);
+      pageFooter.style.cssText = "position:absolute;bottom:34px;left:34px;right:34px;";
+      page.append(pageFooter);
+      host.append(page);
+      pages.push(page);
+      currentTable = null;
+    };
+    newPage();
+    for (const unit of units) {
+      const append = () => {
+        if (!unit.table) {
+          currentTable = null;
+          const node = unit.node.cloneNode(true);
+          content.append(node);
+          return [node];
+        }
+        if (!currentTable) {
+          currentTable = unit.table.cloneNode(true);
+          currentTable.tBodies[0].replaceChildren();
+          content.append(currentTable);
+        }
+        const rows = unit.rows.map((row) => row.cloneNode(true));
+        currentTable.tBodies[0].append(...rows);
+        return rows;
+      };
+      let inserted = append();
+      if (content.getBoundingClientRect().height > 1020) {
+        inserted.forEach((node) => node.remove());
+        if (currentTable && !currentTable.tBodies[0].rows.length) currentTable.remove();
+        newPage();
+        inserted = append();
+        if (content.getBoundingClientRect().height > 1020) throw new Error("單一項目內容超過一頁，請將過長的備註分成多個項目。");
+      }
+    }
+    source.remove();
+    pages.forEach((page, index) => {
+      page.querySelector(".pdf-page-label").textContent = `第 ${index + 1} / ${pages.length} 頁`;
+      page.querySelector(".pdf-footer span:last-child").textContent = `${index + 1} / ${pages.length}`;
+    });
+    return pages;
+  };
+
   return {
+    paginateRenderedPdf,
     buildPdfFileName,
     paginateEstimateGroups,
     paginateEstimateGroupsForPdf,

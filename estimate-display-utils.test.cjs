@@ -182,10 +182,10 @@ test("published app includes one-click PDF assets and control", () => {
   const worker = fs.readFileSync("./sw.js", "utf8");
   const appSource = fs.readFileSync("./app.jsx", "utf8");
 
-  assert.match(index, /pdf-export-utils\.js\?v=2/);
+  assert.match(index, /pdf-export-utils\.js\?v=3/);
   assert.match(index, /html2canvas\.min\.js/);
   assert.match(index, /jspdf\.umd\.min\.js/);
-  assert.match(worker, /pdf-export-utils\.js\?v=2/);
+  assert.match(worker, /pdf-export-utils\.js\?v=3/);
   assert.match(worker, /html2canvas\.min\.js/);
   assert.match(worker, /jspdf\.umd\.min\.js/);
   assert.match(appSource, /下載 PDF/);
@@ -195,7 +195,7 @@ test("published app includes one-click PDF assets and control", () => {
 test("formal PDF fills the first page and uses a compact continuation header", () => {
   const appSource = fs.readFileSync("./app.jsx", "utf8");
 
-  assert.match(appSource, /paginateEstimateGroupsForPdf\(estimateGroups, 24\)/);
+  assert.match(appSource, /paginateRenderedPdf\(sheet\)/);
   assert.match(appSource, /pageIndex === 0/);
   assert.match(appSource, /continuation-head/);
   assert.match(appSource, /formalTitle.*（續）/);

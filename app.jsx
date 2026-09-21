@@ -14,6 +14,7 @@ const {
 } = window.KaiwoEstimateDisplay;
 const {
   buildPdfFileName,
+  paginateRenderedPdf,
   paginateEstimateGroupsForPdf,
   shouldAppendPdfSummaryPage
 } = window.KaiwoPdfExport;
@@ -970,8 +971,7 @@ function App() {
     const now = new Date();
     const today = now.toLocaleDateString("zh-TW");
     const terms = estimateTerms;
-    const pages = paginateEstimateGroupsForPdf(estimateGroups, 24);
-    if (shouldAppendPdfSummaryPage(pages.at(-1), 24, 18 + Math.max(0, Math.ceil(paymentOutput.length / 2) - 1))) pages.push([]);
+    const pages = [estimateGroups.map((group) => ({ ...group, showSubtotal: true }))];
 
     const host = document.createElement("div");
     host.setAttribute("aria-hidden", "true");
@@ -1057,6 +1057,9 @@ function App() {
             .terms .payment-title { margin-top: 8px; }
             .payment-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 16px; }
             .payment-grid p { overflow-wrap: anywhere; }
+            .pdf-signatures { display:flex; gap:28px; margin-top:28px; font-size:11px; }
+            .pdf-signatures div { flex:1; line-height:3; }
+            .pdf-signatures .signature-line { display:inline-block; width:140px; border-bottom:1px solid #333; }
             .pdf-footer { margin-top: auto; border-top: 1px solid #aaa; padding-top: 8px; color: #555; font-size: 9px; display: flex; justify-content: space-between; }
           </style>
           ${pageHeader}
@@ -1068,18 +1071,21 @@ function App() {
             </table>
           ` : "<div class=\"empty\">本頁為估價總計與條款</div>"}
           ${totals}
+          <section class="pdf-signatures"><div>施工方簽名：<span class="signature-line">&nbsp;</span><br>簽名日期：<span class="signature-line">&nbsp;</span></div><div>委託方簽名：<span class="signature-line">&nbsp;</span><br>簽名日期：<span class="signature-line">&nbsp;</span></div></section>
           <footer class="pdf-footer"><span>${xmlEscape(pricing.brand.name)}｜LINE ${xmlEscape(pricing.brand.line)}｜${xmlEscape(pricing.brand.phone)}</span><span>${pageIndex + 1} / ${pages.length}</span></footer>
         `;
         host.replaceChildren(sheet);
         if (document.fonts?.ready) await document.fonts.ready;
-        const canvas = await window.html2canvas(sheet, {
+        const renderedPages = paginateRenderedPdf(sheet);
+        for (let renderedIndex = 0; renderedIndex < renderedPages.length; renderedIndex++) {
+        const canvas = await window.html2canvas(renderedPages[renderedIndex], {
           scale: 2,
           backgroundColor: "#ffffff",
           logging: false,
           useCORS: true,
           windowWidth: 794
         });
-        if (pageIndex > 0) pdf.addPage("a4", "portrait");
+        if (renderedIndex > 0) pdf.addPage("a4", "portrait");
         const pageWidth = 210;
         const pageHeight = 297;
         let imageWidth = pageWidth;
@@ -1089,6 +1095,7 @@ function App() {
           imageWidth = canvas.width * imageHeight / canvas.height;
         }
         pdf.addImage(canvas.toDataURL("image/jpeg", 0.94), "JPEG", (pageWidth - imageWidth) / 2, 0, imageWidth, imageHeight, undefined, "FAST");
+        }
       }
       pdf.save(buildPdfFileName(projectName, now));
     } catch (error) {
