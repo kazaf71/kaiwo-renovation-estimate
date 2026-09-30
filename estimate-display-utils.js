@@ -18,8 +18,8 @@
   const formatCabinetQuantity = (widthFeet, count) =>
     (Number(widthFeet) * Number(count || 0)).toFixed(2);
 
-  const estimateDetailHeaders = ["工種", "項目", "單位", "數量", "單項總價", "備註"];
-  const estimateDetailColumnWidths = ["12%", "20%", "7%", "9%", "17%", "35%"];
+  const estimateDetailHeaders = ["工種", "項目", "數量", "單位", "單價", "單項總價", "備註"];
+  const estimateDetailColumnWidths = ["10%", "20%", "8%", "7%", "14%", "16%", "25%"];
 
   const buildEstimateTitles = (projectName, brandName) => {
     const name = String(projectName || "").trim();
@@ -34,7 +34,7 @@
 
   const toEstimateDetailCells = (row, subtotalText, showTrade = true) => {
     const itemName = row.area && row.area !== "-" ? `${row.area}｜${row.name}` : row.name;
-    return [showTrade ? row.trade : "", itemName, row.unit, row.qty, subtotalText, String(row.note || "").trim()];
+    return [showTrade ? row.trade : "", itemName, row.qty, row.unit, row.unitPrice, subtotalText, String(row.note || "").trim()];
   };
 
   return {

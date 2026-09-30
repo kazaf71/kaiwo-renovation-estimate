@@ -761,38 +761,39 @@ function App() {
       String(now.getDate()).padStart(2, "0")
     ].join("");
     const tableRows = [
-      odsCellsRow([{ value: formalTitle, span: 6, style: "title" }]),
+      odsCellsRow([{ value: formalTitle, span: 7, style: "title" }]),
       odsCellsRow([
         { value: "工程地點", style: "metaLabel" },
         { value: projectLocationText, span: 2, style: "meta" },
         { value: "日期", style: "metaLabel" },
-        { value: today, span: 2, style: "meta" }
+        { value: today, span: 3, style: "meta" }
       ]),
       odsCellsRow([
         { value: "工程項目", style: "metaLabel" },
         { value: "室內裝修工程", span: 2, style: "meta" },
         { value: "屋況", style: "metaLabel" },
-        { value: condition, span: 2, style: "meta" }
+        { value: condition, span: 3, style: "meta" }
       ]),
       odsCellsRow([
         { value: "案件名稱", style: "metaLabel" },
         { value: projectName.trim() || "未填寫", span: 2, style: "meta" },
         { value: "聯絡方式", style: "metaLabel" },
-        { value: `LINE ${pricing.brand.line}｜${pricing.brand.phone}`, span: 2, style: "meta" }
+        { value: `LINE ${pricing.brand.line}｜${pricing.brand.phone}`, span: 3, style: "meta" }
       ]),
-      odsRow(["", "", "", "", "", ""], "spacer"),
+      odsRow(["", "", "", "", "", "", ""], "spacer"),
       odsCellsRow([
         { value: estimateDetailHeaders[0], style: "head" },
         { value: estimateDetailHeaders[1], style: "head" },
         { value: estimateDetailHeaders[2], style: "headCenter" },
         { value: estimateDetailHeaders[3], style: "headCenter" },
         { value: estimateDetailHeaders[4], style: "headAmount" },
-        { value: estimateDetailHeaders[5], style: "head" }
+        { value: estimateDetailHeaders[5], style: "headAmount" },
+        { value: estimateDetailHeaders[6], style: "head" }
       ])
     ];
 
     estimateGroups.forEach((group) => {
-      tableRows.push(odsCellsRow([{ value: group.trade, span: 6, style: "section" }]));
+      tableRows.push(odsCellsRow([{ value: group.trade, span: 7, style: "section" }]));
       group.rows.forEach((row) => {
         const cells = toEstimateDetailCells(row, `NT$ ${moneyRange(row.subtotal)}`, false);
         tableRows.push(odsCellsRow([
@@ -800,32 +801,33 @@ function App() {
           { value: cells[1], style: "bodyItem" },
           { value: cells[2], style: "bodyCenter" },
           { value: cells[3], style: "bodyCenter" },
-          { value: cells[4], style: "bodyAmountStrong" },
-          { value: cells[5], style: "note" }
+          { value: cells[4], style: "bodyAmount" },
+          { value: cells[5], style: "bodyAmountStrong" },
+          { value: cells[6], style: "note" }
         ]));
       });
       tableRows.push(odsCellsRow([
-        { value: `${group.trade} 小計`, span: 4, style: "subtotalLabel" },
+        { value: `${group.trade} 小計`, span: 5, style: "subtotalLabel" },
         { value: `NT$ ${moneyRange(group.subtotal)}`, style: "subtotalAmount" },
         { value: "", style: "subtotal" }
       ]));
-      tableRows.push(odsRow(["", "", "", "", "", ""], "spacer"));
+      tableRows.push(odsRow(["", "", "", "", "", "", ""], "spacer"));
     });
 
     totalRows.forEach(([label, total]) => {
       tableRows.push(odsCellsRow([
-        { value: label, span: 4, style: "totalLabel" },
+        { value: label, span: 5, style: "totalLabel" },
         { value: `NT$ ${moneyRange(total)}`, style: "totalAmount" },
         { value: "", style: "total" }
       ]));
     });
     tableRows.push(odsCellsRow([
-      { value: finalTotalLabel, span: 4, style: "grandLabel" },
+      { value: finalTotalLabel, span: 5, style: "grandLabel" },
       { value: `NT$ ${moneyRange(finalTotal)}`, style: "grandAmount" },
       { value: "", style: "grand" }
     ]));
-    tableRows.push(odsRow(["", "", "", "", "", ""], "spacer"));
-    formalNotes.forEach((note) => tableRows.push(odsRow([{ value: note, span: 6, style: "note" }])));
+    tableRows.push(odsRow(["", "", "", "", "", "", ""], "spacer"));
+    formalNotes.forEach((note) => tableRows.push(odsRow([{ value: note, span: 7, style: "note" }])));
 
     const contentXml = `<?xml version="1.0" encoding="UTF-8"?>
 <office:document-content
@@ -836,12 +838,13 @@ function App() {
   xmlns:fo="urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0"
   office:version="1.2">
   <office:automatic-styles>
-    <style:style style:name="colTrade" style:family="table-column"><style:table-column-properties style:column-width="2.5cm"/></style:style>
-    <style:style style:name="colItem" style:family="table-column"><style:table-column-properties style:column-width="4.2cm"/></style:style>
-    <style:style style:name="colUnit" style:family="table-column"><style:table-column-properties style:column-width="1.35cm"/></style:style>
-    <style:style style:name="colQty" style:family="table-column"><style:table-column-properties style:column-width="1.8cm"/></style:style>
-    <style:style style:name="colTotal" style:family="table-column"><style:table-column-properties style:column-width="3.5cm"/></style:style>
-    <style:style style:name="colNote" style:family="table-column"><style:table-column-properties style:column-width="7.3cm"/></style:style>
+    <style:style style:name="colTrade" style:family="table-column"><style:table-column-properties style:column-width="2.2cm"/></style:style>
+    <style:style style:name="colItem" style:family="table-column"><style:table-column-properties style:column-width="3.8cm"/></style:style>
+    <style:style style:name="colQty" style:family="table-column"><style:table-column-properties style:column-width="1.5cm"/></style:style>
+    <style:style style:name="colUnit" style:family="table-column"><style:table-column-properties style:column-width="1.2cm"/></style:style>
+    <style:style style:name="colUnitPrice" style:family="table-column"><style:table-column-properties style:column-width="2.5cm"/></style:style>
+    <style:style style:name="colTotal" style:family="table-column"><style:table-column-properties style:column-width="3cm"/></style:style>
+    <style:style style:name="colNote" style:family="table-column"><style:table-column-properties style:column-width="5cm"/></style:style>
     <style:style style:name="title" style:family="table-cell"><style:table-cell-properties fo:background-color="#F2E7D8" fo:border="0.74pt solid #8B6F58" fo:padding="0.2cm"/><style:paragraph-properties fo:text-align="center"/><style:text-properties fo:font-size="20pt" fo:font-weight="bold" fo:color="#3F2C22"/></style:style>
     <style:style style:name="meta" style:family="table-cell"><style:table-cell-properties fo:border="0.5pt solid #D8C8B5" fo:padding="0.08cm"/><style:text-properties fo:font-size="9.5pt" fo:color="#4B3428"/></style:style>
     <style:style style:name="metaLabel" style:family="table-cell"><style:table-cell-properties fo:background-color="#FBF6EF" fo:border="0.5pt solid #D8C8B5" fo:padding="0.08cm"/><style:text-properties fo:font-size="9.5pt" fo:font-weight="bold" fo:color="#4B3428"/></style:style>
@@ -871,8 +874,9 @@ function App() {
       <table:table table:name="工程估價單">
         <table:table-column table:style-name="colTrade"/>
         <table:table-column table:style-name="colItem"/>
-        <table:table-column table:style-name="colUnit"/>
         <table:table-column table:style-name="colQty"/>
+        <table:table-column table:style-name="colUnit"/>
+        <table:table-column table:style-name="colUnitPrice"/>
         <table:table-column table:style-name="colTotal"/>
         <table:table-column table:style-name="colNote"/>
         ${tableRows.join("\n")}
@@ -922,27 +926,27 @@ function App() {
     const htmlCell = (value, tag = "td", extra = "") => `<${tag} ${extra}>${xmlEscape(value)}</${tag}>`;
     const colgroup = `<colgroup>${estimateDetailColumnWidths.map((width) => `<col style="width:${width}">`).join("")}</colgroup>`;
     const rows = [
-      `<tr>${htmlCell(formalTitle, "th", 'colspan="6" class="title"')}</tr>`,
-      `<tr>${["工程地點", projectLocationText, "", "日期", today, ""].map((value) => htmlCell(value)).join("")}</tr>`,
-      `<tr>${["工程項目", "室內裝修工程", "", "屋況", condition, ""].map((value) => htmlCell(value)).join("")}</tr>`,
-      `<tr>${["案件名稱", projectName.trim() || "未填寫", "", "聯絡方式", `LINE ${pricing.brand.line}｜${pricing.brand.phone}`, ""].map((value) => htmlCell(value)).join("")}</tr>`,
+      `<tr>${htmlCell(formalTitle, "th", 'colspan="7" class="title"')}</tr>`,
+      `<tr>${["工程地點", projectLocationText, "", "日期", today, "", ""].map((value) => htmlCell(value)).join("")}</tr>`,
+      `<tr>${["工程項目", "室內裝修工程", "", "屋況", condition, "", ""].map((value) => htmlCell(value)).join("")}</tr>`,
+      `<tr>${["案件名稱", projectName.trim() || "未填寫", "", "聯絡方式", `LINE ${pricing.brand.line}｜${pricing.brand.phone}`, "", ""].map((value) => htmlCell(value)).join("")}</tr>`,
       `<tr>${estimateDetailHeaders.map((value) => htmlCell(value, "th")).join("")}</tr>`
     ];
 
     estimateGroups.forEach((group) => {
-      rows.push(`<tr>${htmlCell(group.trade, "th", 'colspan="6" class="section"')}</tr>`);
+      rows.push(`<tr>${htmlCell(group.trade, "th", 'colspan="7" class="section"')}</tr>`);
       group.rows.forEach((row) => {
         const cells = toEstimateDetailCells(row, `NT$ ${moneyRange(row.subtotal)}`, false);
-        rows.push(`<tr>${cells.map((value, index) => htmlCell(value, "td", index === 5 ? 'class="note item-note-output"' : "")).join("")}</tr>`);
+        rows.push(`<tr>${cells.map((value, index) => htmlCell(value, "td", index === 6 ? 'class="note item-note-output"' : "")).join("")}</tr>`);
       });
-      rows.push(`<tr>${htmlCell(`${group.trade} 小計`, "td", 'colspan="4" class="subtotal"')}${htmlCell(`NT$ ${moneyRange(group.subtotal)}`, "td", 'class="subtotal amount"')}${htmlCell("", "td", 'class="subtotal"')}</tr>`);
+      rows.push(`<tr>${htmlCell(`${group.trade} 小計`, "td", 'colspan="5" class="subtotal"')}${htmlCell(`NT$ ${moneyRange(group.subtotal)}`, "td", 'class="subtotal amount"')}${htmlCell("", "td", 'class="subtotal"')}</tr>`);
     });
 
     [...totalRows, [finalTotalLabel, finalTotal]].forEach(([label, total]) => {
-      rows.push(`<tr>${htmlCell(label, "td", 'colspan="4" class="total"')}${htmlCell(`NT$ ${moneyRange(total)}`, "td", 'class="total amount"')}${htmlCell("", "td", 'class="total"')}</tr>`);
+      rows.push(`<tr>${htmlCell(label, "td", 'colspan="5" class="total"')}${htmlCell(`NT$ ${moneyRange(total)}`, "td", 'class="total amount"')}${htmlCell("", "td", 'class="total"')}</tr>`);
     });
 
-    formalNotes.forEach((note) => rows.push(`<tr>${htmlCell(note, "td", 'colspan="6" class="note"')}</tr>`));
+    formalNotes.forEach((note) => rows.push(`<tr>${htmlCell(note, "td", 'colspan="7" class="note"')}</tr>`));
 
     const html = `<!doctype html>
 <html>
@@ -1002,14 +1006,14 @@ function App() {
         const tableRows = pageGroups.flatMap((group) => {
           const sectionTitle = `${group.trade}${group.continued ? "（續）" : ""}`;
           const rows = [
-            `<tr class="trade"><td colspan="6">${xmlEscape(sectionTitle)}</td></tr>`,
+            `<tr class="trade"><td colspan="7">${xmlEscape(sectionTitle)}</td></tr>`,
             ...group.rows.map((row) => {
               const cells = toEstimateDetailCells(row, `NT$ ${moneyRange(row.subtotal)}`, false);
-              return `<tr>${cells.map((value, index) => `<td class="${index === 4 ? "amount" : ""}">${xmlEscape(value)}</td>`).join("")}</tr>`;
+              return `<tr>${cells.map((value, index) => `<td class="${[4, 5].includes(index) ? "amount" : ""}">${xmlEscape(value)}</td>`).join("")}</tr>`;
             })
           ];
           if (group.showSubtotal) {
-            rows.push(`<tr class="subtotal"><td colspan="4">${xmlEscape(group.trade)} 小計</td><td class="amount">NT$ ${xmlEscape(moneyRange(group.subtotal))}</td><td></td></tr>`);
+            rows.push(`<tr class="subtotal"><td colspan="5">${xmlEscape(group.trade)} 小計</td><td class="amount">NT$ ${xmlEscape(moneyRange(group.subtotal))}</td><td></td></tr>`);
           }
           return rows;
         }).join("");
@@ -1745,8 +1749,9 @@ function App() {
                 <tr>
                   <th className="border-b border-coffee/10 px-3 py-2.5">工種</th>
                   <th className="border-b border-coffee/10 px-3 py-2.5">項目</th>
-                  <th className="border-b border-coffee/10 px-3 py-2.5">單位</th>
                   <th className="border-b border-coffee/10 px-3 py-2.5 text-right">數量</th>
+                  <th className="border-b border-coffee/10 px-3 py-2.5">單位</th>
+                  <th className="border-b border-coffee/10 px-3 py-2.5 text-right">單價</th>
                   <th className="border-b border-coffee/10 px-3 py-2.5 text-right">單項總價</th>
                   <th className="border-b border-coffee/10 px-3 py-2.5">備註</th>
                 </tr>
@@ -1755,20 +1760,21 @@ function App() {
                 {estimateGroups.map((group) => (
                   <React.Fragment key={group.trade}>
                     <tr className="bg-wood/25">
-                      <td className="border-b border-coffee/10 px-3 py-2.5 font-black text-coffee" colSpan="6">{group.trade}</td>
+                      <td className="border-b border-coffee/10 px-3 py-2.5 font-black text-coffee" colSpan="7">{group.trade}</td>
                     </tr>
                     {group.rows.map((row, index) => (
                       <tr key={`${row.trade}-${row.name}-${index}`} className="odd:bg-white even:bg-creamSoft">
                         <td className="border-b border-coffee/10 px-3 py-2.5 text-stone-700"></td>
                         <td className="break-words border-b border-coffee/10 px-3 py-2.5 text-stone-800">{row.area && row.area !== "-" ? `${row.area}｜${row.name}` : row.name}</td>
-                        <td className="border-b border-coffee/10 px-3 py-2.5 text-stone-700">{row.unit}</td>
                         <td className="border-b border-coffee/10 px-3 py-2.5 text-right text-stone-700">{row.qty}</td>
+                        <td className="border-b border-coffee/10 px-3 py-2.5 text-stone-700">{row.unit}</td>
+                        <td className="border-b border-coffee/10 px-3 py-2.5 text-right text-stone-700">{row.unitPrice}</td>
                         <td className="border-b border-coffee/10 px-3 py-2.5 text-right font-bold text-stone-800">NT$ {moneyRange(row.subtotal)}</td>
                         <td className="whitespace-normal break-words border-b border-coffee/10 px-3 py-2.5 text-stone-700">{cleanNote(row.note)}</td>
                       </tr>
                     ))}
                     <tr className="bg-cream">
-                      <td className="border-b border-coffee/10 px-3 py-2.5 text-right font-black text-coffee" colSpan="4">{group.trade} 小計</td>
+                      <td className="border-b border-coffee/10 px-3 py-2.5 text-right font-black text-coffee" colSpan="5">{group.trade} 小計</td>
                       <td className="border-b border-coffee/10 px-3 py-2.5 text-right font-black text-coffee">NT$ {moneyRange(group.subtotal)}</td>
                       <td className="border-b border-coffee/10 px-3 py-2.5"></td>
                     </tr>
@@ -1777,26 +1783,26 @@ function App() {
               </tbody>
               <tfoot className="bg-coffee text-white">
                 <tr>
-                  <td className="px-3 py-3 font-bold" colSpan="4">稅前工程總額</td>
+                  <td className="px-3 py-3 font-bold" colSpan="5">稅前工程總額</td>
                   <td className="px-3 py-3 text-right font-bold">NT$ {moneyRange(grandTotal)}</td>
                   <td className="px-3 py-3"></td>
                 </tr>
                 {managementRate > 0 && (
                   <tr>
-                    <td className="px-3 py-3 font-bold" colSpan="4">監管費（{managementPercent}%）</td>
+                    <td className="px-3 py-3 font-bold" colSpan="5">監管費（{managementPercent}%）</td>
                     <td className="px-3 py-3 text-right font-bold">NT$ {moneyRange(managementTotal)}</td>
                     <td className="px-3 py-3"></td>
                   </tr>
                 )}
                 {invoiceNeeded && (
                   <tr>
-                    <td className="px-3 py-3 font-bold" colSpan="4">發票稅金（5%）</td>
+                    <td className="px-3 py-3 font-bold" colSpan="5">發票稅金（5%）</td>
                     <td className="px-3 py-3 text-right font-bold">NT$ {moneyRange(invoiceTotal)}</td>
                     <td className="px-3 py-3"></td>
                   </tr>
                 )}
                 <tr className="bg-stone-950">
-                  <td className="px-3 py-4 text-base font-black" colSpan="4">{finalTotalLabel}</td>
+                  <td className="px-3 py-4 text-base font-black" colSpan="5">{finalTotalLabel}</td>
                   <td className="px-3 py-4 text-right text-base font-black">NT$ {moneyRange(finalTotal)}</td>
                   <td className="px-3 py-4"></td>
                 </tr>
@@ -1818,9 +1824,10 @@ function App() {
                           <div className="mt-1 whitespace-nowrap font-black text-coffee">NT$ {moneyRange(row.subtotal)}</div>
                         </div>
                       </div>
-                      <div className="mt-3 grid grid-cols-2 gap-3 border-t border-coffee/10 pt-3 text-sm">
-                        <div><span className="font-bold text-stone-500">單位：</span><span className="text-stone-800">{row.unit}</span></div>
+                      <div className="mt-3 grid grid-cols-3 gap-3 border-t border-coffee/10 pt-3 text-sm">
                         <div><span className="font-bold text-stone-500">數量：</span><span className="text-stone-800">{row.qty}</span></div>
+                        <div><span className="font-bold text-stone-500">單位：</span><span className="text-stone-800">{row.unit}</span></div>
+                        <div><span className="font-bold text-stone-500">單價：</span><span className="text-stone-800">{row.unitPrice}</span></div>
                       </div>
                       {cleanNote(row.note) && (
                         <div className="mt-3 break-words border-t border-coffee/10 pt-3 text-sm leading-6 text-stone-700">

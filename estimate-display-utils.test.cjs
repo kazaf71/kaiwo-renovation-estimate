@@ -92,17 +92,18 @@ test("low cabinet choices are merged while old drafts remain supported", () => {
   assert.deepEqual(pricing.legacyCabinetTypes.filter((item) => ["lowA", "lowB"].includes(item.id)).map((item) => item.id), ["lowA", "lowB"]);
 });
 
-test("all estimate outputs share the requested six-column order", () => {
-  assert.deepEqual(estimateDetailHeaders, ["工種", "項目", "單位", "數量", "單項總價", "備註"]);
+test("all customer estimate outputs show unit price in the requested seven-column order", () => {
+  assert.deepEqual(estimateDetailHeaders, ["工種", "項目", "數量", "單位", "單價", "單項總價", "備註"]);
   assert.deepEqual(toEstimateDetailCells({
     trade: "櫃體工程",
     area: "玄關",
     name: "鞋櫃",
-    unit: "尺",
     qty: "3.96",
+    unit: "尺",
+    unitPrice: "NT$ 7,500元",
     note: "現場確認",
     subtotal: { low: 29703, high: 29703 }
-  }, "NT$ 29,703元"), ["櫃體工程", "玄關｜鞋櫃", "尺", "3.96", "NT$ 29,703元", "現場確認"]);
+  }, "NT$ 29,703元"), ["櫃體工程", "玄關｜鞋櫃", "3.96", "尺", "NT$ 7,500元", "NT$ 29,703元", "現場確認"]);
 });
 
 test("grouped detail rows leave trade blank after the group heading", () => {
@@ -115,11 +116,11 @@ test("grouped detail rows leave trade blank after the group heading", () => {
     note: "現場確認"
   };
 
-  assert.deepEqual(toEstimateDetailCells(row, "NT$ 29,703元", false), ["", "玄關｜鞋櫃", "尺", "3.96", "NT$ 29,703元", "現場確認"]);
+  assert.deepEqual(toEstimateDetailCells({ ...row, unitPrice: "NT$ 7,500元" }, "NT$ 29,703元", false), ["", "玄關｜鞋櫃", "3.96", "尺", "NT$ 7,500元", "NT$ 29,703元", "現場確認"]);
 });
 
 test("detail column widths reserve the largest area for notes", () => {
-  assert.deepEqual(estimateDetailColumnWidths, ["12%", "20%", "7%", "9%", "17%", "35%"]);
+  assert.deepEqual(estimateDetailColumnWidths, ["10%", "20%", "8%", "7%", "14%", "16%", "25%"]);
 });
 
 test("estimate titles use the editable project name", () => {
