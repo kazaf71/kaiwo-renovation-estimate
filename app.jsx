@@ -1,6 +1,7 @@
 const pricing = JSON.parse(document.querySelector("#pricing-data").textContent);
 
 const { cleanNote, noteLine } = window.KaiwoNotes;
+const { editableText, editableUnit } = window.KaiwoEditableText;
 const {
   buildPaymentLines,
   buildEstimateTitles,
@@ -114,7 +115,7 @@ const referenceText = (item, fallbackUnit = "") => {
 
 const itemDisplayName = (item, fallback = "") => item?.name || fallback;
 
-const rowText = (row, item, fallback = "") => row.customText || itemDisplayName(item, row.name || fallback);
+const rowText = (row, item, fallback = "") => editableText(row, itemDisplayName(item, row.name || fallback));
 
 const actualUnitPriceText = (value) => {
   const number = fixedNumber(value);
@@ -307,8 +308,8 @@ function App() {
     return {
       ...row,
       typeName: type.name,
-      customText: row.customText || row.name || itemDisplayName(type, "新增櫃體"),
-      unit: row.unit || "尺",
+      customText: editableText(row, row.name || itemDisplayName(type, "新增櫃體")),
+      unit: editableUnit(row, "尺"),
       unitLow: Number(row.low || 0),
       unitHigh: Number(row.high || 0),
       widthFeet,
@@ -324,7 +325,7 @@ function App() {
       ...row,
       item,
       customText: rowText(row, item),
-      unit: row.unit || item.unit,
+      unit: editableUnit(row, item.unit),
       subtotal: actualPricedPair(row.qty, row.actualUnitPrice)
     };
   });
@@ -340,28 +341,28 @@ function App() {
     ...row,
     item: plumbingItemMap[row.itemId] || pricing.plumbingExtraItems[0],
     customText: rowText(row, plumbingItemMap[row.itemId] || pricing.plumbingExtraItems[0]),
-    unit: row.unit || (plumbingItemMap[row.itemId] || pricing.plumbingExtraItems[0]).unit,
+    unit: editableUnit(row, (plumbingItemMap[row.itemId] || pricing.plumbingExtraItems[0]).unit),
     subtotal: actualPricedPair(row.qty, row.actualUnitPrice)
   }));
   const paintingExtraTotals = paintingExtras.map((row) => ({
     ...row,
     item: paintingItemMap[row.itemId] || pricing.paintingExtraItems[0],
     customText: rowText(row, paintingItemMap[row.itemId] || pricing.paintingExtraItems[0]),
-    unit: row.unit || (paintingItemMap[row.itemId] || pricing.paintingExtraItems[0]).unit,
+    unit: editableUnit(row, (paintingItemMap[row.itemId] || pricing.paintingExtraItems[0]).unit),
     subtotal: actualPricedPair(row.qty, row.actualUnitPrice)
   }));
   const airConditioningTotals = airConditioningRows.map((row) => ({
     ...row,
     item: airConditioningItemMap[row.itemId] || pricing.airConditioningItems[0],
     customText: rowText(row, airConditioningItemMap[row.itemId] || pricing.airConditioningItems[0]),
-    unit: row.unit || (airConditioningItemMap[row.itemId] || pricing.airConditioningItems[0]).unit,
+    unit: editableUnit(row, (airConditioningItemMap[row.itemId] || pricing.airConditioningItems[0]).unit),
     subtotal: actualPricedPair(row.qty, row.actualUnitPrice)
   }));
   const masonryTotals = masonryRows.map((row) => ({
     ...row,
     item: masonryItemMap[row.itemId] || pricing.masonryItems[0],
     customText: rowText(row, masonryItemMap[row.itemId] || pricing.masonryItems[0]),
-    unit: row.unit || (masonryItemMap[row.itemId] || pricing.masonryItems[0]).unit,
+    unit: editableUnit(row, (masonryItemMap[row.itemId] || pricing.masonryItems[0]).unit),
     subtotal: actualPricedPair(row.qty, row.actualUnitPrice)
   }));
   const plumbingExtraTotal = plumbingExtraTotals.reduce((sum, row) => addPair(sum, row.subtotal), pair());
