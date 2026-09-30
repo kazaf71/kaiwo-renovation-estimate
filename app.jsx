@@ -8,6 +8,7 @@ const {
   buildEstimateTitles,
   estimateDetailColumnWidths,
   estimateDetailHeaders,
+  estimateOdsColumnWidths,
   formatCabinetQuantity,
   formatProjectLocation,
   isPricedItem,
@@ -838,13 +839,13 @@ function App() {
   xmlns:fo="urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0"
   office:version="1.2">
   <office:automatic-styles>
-    <style:style style:name="colTrade" style:family="table-column"><style:table-column-properties style:column-width="2.2cm"/></style:style>
-    <style:style style:name="colItem" style:family="table-column"><style:table-column-properties style:column-width="3.8cm"/></style:style>
-    <style:style style:name="colQty" style:family="table-column"><style:table-column-properties style:column-width="1.5cm"/></style:style>
-    <style:style style:name="colUnit" style:family="table-column"><style:table-column-properties style:column-width="1.2cm"/></style:style>
-    <style:style style:name="colUnitPrice" style:family="table-column"><style:table-column-properties style:column-width="2.5cm"/></style:style>
-    <style:style style:name="colTotal" style:family="table-column"><style:table-column-properties style:column-width="3cm"/></style:style>
-    <style:style style:name="colNote" style:family="table-column"><style:table-column-properties style:column-width="5cm"/></style:style>
+    <style:style style:name="colTrade" style:family="table-column"><style:table-column-properties style:column-width="${estimateOdsColumnWidths[0]}"/></style:style>
+    <style:style style:name="colItem" style:family="table-column"><style:table-column-properties style:column-width="${estimateOdsColumnWidths[1]}"/></style:style>
+    <style:style style:name="colQty" style:family="table-column"><style:table-column-properties style:column-width="${estimateOdsColumnWidths[2]}"/></style:style>
+    <style:style style:name="colUnit" style:family="table-column"><style:table-column-properties style:column-width="${estimateOdsColumnWidths[3]}"/></style:style>
+    <style:style style:name="colUnitPrice" style:family="table-column"><style:table-column-properties style:column-width="${estimateOdsColumnWidths[4]}"/></style:style>
+    <style:style style:name="colTotal" style:family="table-column"><style:table-column-properties style:column-width="${estimateOdsColumnWidths[5]}"/></style:style>
+    <style:style style:name="colNote" style:family="table-column"><style:table-column-properties style:column-width="${estimateOdsColumnWidths[6]}"/></style:style>
     <style:style style:name="title" style:family="table-cell"><style:table-cell-properties fo:background-color="#F2E7D8" fo:border="0.74pt solid #8B6F58" fo:padding="0.2cm"/><style:paragraph-properties fo:text-align="center"/><style:text-properties fo:font-size="20pt" fo:font-weight="bold" fo:color="#3F2C22"/></style:style>
     <style:style style:name="meta" style:family="table-cell"><style:table-cell-properties fo:border="0.5pt solid #D8C8B5" fo:padding="0.08cm"/><style:text-properties fo:font-size="9.5pt" fo:color="#4B3428"/></style:style>
     <style:style style:name="metaLabel" style:family="table-cell"><style:table-cell-properties fo:background-color="#FBF6EF" fo:border="0.5pt solid #D8C8B5" fo:padding="0.08cm"/><style:text-properties fo:font-size="9.5pt" fo:font-weight="bold" fo:color="#4B3428"/></style:style>

@@ -6,6 +6,7 @@ const {
   buildEstimateTitles,
   estimateDetailColumnWidths,
   estimateDetailHeaders,
+  estimateOdsColumnWidths,
   formatCabinetQuantity,
   formatProjectLocation,
   isPricedItem,
@@ -119,8 +120,9 @@ test("grouped detail rows leave trade blank after the group heading", () => {
   assert.deepEqual(toEstimateDetailCells({ ...row, unitPrice: "NT$ 7,500元" }, "NT$ 29,703元", false), ["", "玄關｜鞋櫃", "3.96", "尺", "NT$ 7,500元", "NT$ 29,703元", "現場確認"]);
 });
 
-test("detail column widths reserve the largest area for notes", () => {
-  assert.deepEqual(estimateDetailColumnWidths, ["10%", "20%", "8%", "7%", "14%", "16%", "25%"]);
+test("unit price columns are compact while keeping room for six digits", () => {
+  assert.deepEqual(estimateDetailColumnWidths, ["10%", "22%", "8%", "7%", "12%", "16%", "25%"]);
+  assert.deepEqual(estimateOdsColumnWidths, ["2.2cm", "4.1cm", "1.5cm", "1.2cm", "2.2cm", "3cm", "5cm"]);
 });
 
 test("estimate titles use the editable project name", () => {

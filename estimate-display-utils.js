@@ -19,7 +19,8 @@
     (Number(widthFeet) * Number(count || 0)).toFixed(2);
 
   const estimateDetailHeaders = ["工種", "項目", "數量", "單位", "單價", "單項總價", "備註"];
-  const estimateDetailColumnWidths = ["10%", "20%", "8%", "7%", "14%", "16%", "25%"];
+  const estimateDetailColumnWidths = ["10%", "22%", "8%", "7%", "12%", "16%", "25%"];
+  const estimateOdsColumnWidths = ["2.2cm", "4.1cm", "1.5cm", "1.2cm", "2.2cm", "3cm", "5cm"];
 
   const buildEstimateTitles = (projectName, brandName) => {
     const name = String(projectName || "").trim();
@@ -49,6 +50,7 @@
     buildEstimateTitles,
     estimateDetailColumnWidths,
     estimateDetailHeaders,
+    estimateOdsColumnWidths,
     formatCabinetQuantity,
     formatProjectLocation,
     isPricedItem,
