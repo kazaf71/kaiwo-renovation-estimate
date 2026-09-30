@@ -18,7 +18,7 @@ test("filled notes are trimmed and appended", () => {
 test("offline app shell includes estimate helper scripts", () => {
   const serviceWorker = fs.readFileSync("./sw.js", "utf8");
   const index = fs.readFileSync("./index.html", "utf8");
-  assert.match(serviceWorker, /kaiwo-estimate-v30/);
+  assert.match(serviceWorker, /kaiwo-estimate-v31/);
   assert.match(serviceWorker, /\/app\.jsx\?v=29/);
   assert.match(serviceWorker, /\/note-utils\.js\?v=15/);
   assert.match(serviceWorker, /\/editable-text-utils\.js\?v=2/);
