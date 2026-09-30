@@ -18,7 +18,7 @@ test("filled notes are trimmed and appended", () => {
 test("offline app shell includes estimate helper scripts", () => {
   const serviceWorker = fs.readFileSync("./sw.js", "utf8");
   const index = fs.readFileSync("./index.html", "utf8");
-  assert.match(serviceWorker, /kaiwo-estimate-v25/);
+  assert.match(serviceWorker, /kaiwo-estimate-v26/);
   assert.match(serviceWorker, /\/app\.jsx\?v=25/);
   assert.match(serviceWorker, /\/note-utils\.js\?v=15/);
   assert.match(serviceWorker, /\/editable-text-utils\.js\?v=2/);
@@ -35,4 +35,10 @@ test("estimate details provide shared desktop and mobile layouts", () => {
   const app = fs.readFileSync("./app.jsx", "utf8");
   assert.match(app, /estimate-detail-desktop hidden md:table/);
   assert.match(app, /estimate-detail-mobile md:hidden/);
+});
+
+test("default woodwork catalog names the air-conditioner cover correctly", () => {
+  const index = fs.readFileSync("./index.html", "utf8");
+  assert.match(index, /"id": "acCover", "name": "冷氣帽蓋"/);
+  assert.doesNotMatch(index, /冷氣個蓋/);
 });
