@@ -93,8 +93,8 @@ test("low cabinet choices are merged while old drafts remain supported", () => {
   assert.deepEqual(pricing.legacyCabinetTypes.filter((item) => ["lowA", "lowB"].includes(item.id)).map((item) => item.id), ["lowA", "lowB"]);
 });
 
-test("all customer estimate outputs show unit price in the requested seven-column order", () => {
-  assert.deepEqual(estimateDetailHeaders, ["工種", "項目", "數量", "單位", "單價", "單項總價", "備註"]);
+test("customer estimate rows use the requested six columns without a blank trade cell", () => {
+  assert.deepEqual(estimateDetailHeaders, ["項目", "數量", "單位", "單價", "單項總價", "備註"]);
   assert.deepEqual(toEstimateDetailCells({
     trade: "櫃體工程",
     area: "玄關",
@@ -104,10 +104,10 @@ test("all customer estimate outputs show unit price in the requested seven-colum
     unitPrice: "NT$ 7,500元",
     note: "現場確認",
     subtotal: { low: 29703, high: 29703 }
-  }, "NT$ 29,703元"), ["櫃體工程", "玄關｜鞋櫃", "3.96", "尺", "NT$ 7,500元", "NT$ 29,703元", "現場確認"]);
+  }, "NT$ 29,703元"), ["玄關｜鞋櫃", "3.96", "尺", "NT$ 7,500元", "NT$ 29,703元", "現場確認"]);
 });
 
-test("grouped detail rows leave trade blank after the group heading", () => {
+test("grouped detail rows begin directly with the item", () => {
   const row = {
     trade: "櫃體工程",
     area: "玄關",
@@ -117,12 +117,12 @@ test("grouped detail rows leave trade blank after the group heading", () => {
     note: "現場確認"
   };
 
-  assert.deepEqual(toEstimateDetailCells({ ...row, unitPrice: "NT$ 7,500元" }, "NT$ 29,703元", false), ["", "玄關｜鞋櫃", "3.96", "尺", "NT$ 7,500元", "NT$ 29,703元", "現場確認"]);
+  assert.deepEqual(toEstimateDetailCells({ ...row, unitPrice: "NT$ 7,500元" }, "NT$ 29,703元"), ["玄關｜鞋櫃", "3.96", "尺", "NT$ 7,500元", "NT$ 29,703元", "現場確認"]);
 });
 
-test("unit price columns are compact while keeping room for six digits", () => {
-  assert.deepEqual(estimateDetailColumnWidths, ["10%", "22%", "8%", "7%", "12%", "16%", "25%"]);
-  assert.deepEqual(estimateOdsColumnWidths, ["2.2cm", "4.1cm", "1.5cm", "1.2cm", "2.2cm", "3cm", "5cm"]);
+test("item and note columns are equally widest in the compact six-column layout", () => {
+  assert.deepEqual(estimateDetailColumnWidths, ["30%", "7%", "6%", "12%", "15%", "30%"]);
+  assert.deepEqual(estimateOdsColumnWidths, ["5.5cm", "1.3cm", "1.1cm", "2.2cm", "2.8cm", "5.5cm"]);
 });
 
 test("estimate titles use the editable project name", () => {
