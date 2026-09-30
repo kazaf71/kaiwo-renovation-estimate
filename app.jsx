@@ -1,7 +1,7 @@
 const pricing = JSON.parse(document.querySelector("#pricing-data").textContent);
 
 const { cleanNote, noteLine } = window.KaiwoNotes;
-const { editableText, editableUnit } = window.KaiwoEditableText;
+const { editableNumber, editableText, editableUnit } = window.KaiwoEditableText;
 const {
   buildPaymentLines,
   buildEstimateTitles,
@@ -1166,7 +1166,7 @@ function App() {
                 </Field>
               </div>
               <Field label="室內坪數">
-                <input className={numberInputPanelClass} type="number" min="1" value={ping} onChange={(e) => { setPing(Number(e.target.value)); setShowResult(false); }} />
+                <input className={numberInputPanelClass} type="number" min="1" value={ping} onChange={(e) => { setPing(editableNumber(e.target.value)); setShowResult(false); }} />
               </Field>
               <Field label="屋況">
                 <select className="rounded-lg border border-coffee/20 bg-white px-3 py-3" value={condition} onChange={(e) => updateCondition(e.target.value)}>
@@ -1234,10 +1234,10 @@ function App() {
                                 <input className={fullTextInputClass} value={row.customText} onChange={(e) => updateCabinet(row.id, { customText: e.target.value })} />
                               </Field>
                               <Field label="寬度公分">
-                                <input className={numberInputClass} type="number" min="0" value={row.widthCm} onChange={(e) => updateCabinet(row.id, { widthCm: Number(e.target.value) })} />
+                                <input className={numberInputClass} type="number" min="0" value={row.widthCm} onChange={(e) => updateCabinet(row.id, { widthCm: editableNumber(e.target.value) })} />
                               </Field>
                               <Field label="數量">
-                                <input className={numberInputClass} type="number" min="0" value={row.qty} onChange={(e) => updateCabinet(row.id, { qty: Number(e.target.value) })} />
+                                <input className={numberInputClass} type="number" min="0" value={row.qty} onChange={(e) => updateCabinet(row.id, { qty: editableNumber(e.target.value) })} />
                               </Field>
                               <Field label="單位">
                                 <input className={numberInputClass} value={row.unit} onChange={(e) => updateCabinet(row.id, { unit: e.target.value })} />
@@ -1300,7 +1300,7 @@ function App() {
                               <input className={`${fullTextInputClass} wood-text-input`} value={row.customText} placeholder={`填寫${area}要施作的木作內容`} onChange={(e) => updateWood(row.id, { customText: e.target.value })} />
                             </Field>
                             <Field label="數量／尺寸">
-                              <input className={numberInputClass} type="number" min="0" value={row.qty} onChange={(e) => updateWood(row.id, { qty: Number(e.target.value) })} />
+                              <input className={numberInputClass} type="number" min="0" value={row.qty} onChange={(e) => updateWood(row.id, { qty: editableNumber(e.target.value) })} />
                             </Field>
                             <Field label="單位">
                               <input className={numberInputClass} value={row.unit} onChange={(e) => updateWood(row.id, { unit: e.target.value })} />
@@ -1341,7 +1341,7 @@ function App() {
                   <input className={fullTextInputClass} value={floorText} onChange={(e) => { setFloorText(e.target.value); setShowResult(false); }} />
                 </Field>
                 <Field label="地板施工坪數">
-                  <input className={numberInputPanelClass} type="number" min="0" value={floorPing} onChange={(e) => { setFloorPing(Number(e.target.value)); setShowResult(false); }} />
+                  <input className={numberInputPanelClass} type="number" min="0" value={floorPing} onChange={(e) => { setFloorPing(editableNumber(e.target.value)); setShowResult(false); }} />
                 </Field>
                 <Field label="單位">
                   <input className={numberInputPanelClass} value={floorUnit} onChange={(e) => { setFloorUnit(e.target.value); setShowResult(false); }} />
@@ -1390,7 +1390,7 @@ function App() {
                         <input className={fullTextInputClass} value={row.customText} onChange={(e) => updateMasonry(row.id, { customText: e.target.value })} />
                       </Field>
                       <Field label="數量">
-                        <input className={numberInputClass} type="number" min="0" value={row.qty} onChange={(e) => updateMasonry(row.id, { qty: Number(e.target.value) })} />
+                        <input className={numberInputClass} type="number" min="0" value={row.qty} onChange={(e) => updateMasonry(row.id, { qty: editableNumber(e.target.value) })} />
                       </Field>
                       <Field label="單位">
                         <input className={numberInputClass} value={row.unit} onChange={(e) => updateMasonry(row.id, { unit: e.target.value })} />
@@ -1424,7 +1424,7 @@ function App() {
                     <input className={fullTextInputClass} value={protectionText} onChange={(e) => { setProtectionText(e.target.value); setShowResult(false); }} />
                   </Field>
                   <Field label="數量">
-                    <input className={numberInputClass} type="number" min="0" value={protectionQty} onChange={(e) => { setProtectionQty(Number(e.target.value)); setShowResult(false); }} />
+                    <input className={numberInputClass} type="number" min="0" value={protectionQty} onChange={(e) => { setProtectionQty(editableNumber(e.target.value)); setShowResult(false); }} />
                   </Field>
                   <Field label="單位">
                     <input className="rounded-lg border border-coffee/20 px-3 py-2" value={protectionUnit} onChange={(e) => { setProtectionUnit(e.target.value); setShowResult(false); }} />
@@ -1452,7 +1452,7 @@ function App() {
                     <input className={fullTextInputClass} value={cleanupText} onChange={(e) => { setCleanupText(e.target.value); setShowResult(false); }} />
                   </Field>
                   <Field label="數量">
-                    <input className={numberInputClass} type="number" min="0" value={cleanupQty} onChange={(e) => { setCleanupQty(Number(e.target.value)); setShowResult(false); }} />
+                    <input className={numberInputClass} type="number" min="0" value={cleanupQty} onChange={(e) => { setCleanupQty(editableNumber(e.target.value)); setShowResult(false); }} />
                   </Field>
                   <Field label="單位">
                     <input className="rounded-lg border border-coffee/20 px-3 py-2" value={cleanupUnit} onChange={(e) => { setCleanupUnit(e.target.value); setShowResult(false); }} />
@@ -1513,7 +1513,7 @@ function App() {
                         <input className={fullTextInputClass} value={row.customText} onChange={(e) => updatePlumbingExtra(row.id, { customText: e.target.value })} />
                       </Field>
                       <Field label="數量">
-                        <input className={numberInputClass} type="number" min="0" value={row.qty} onChange={(e) => updatePlumbingExtra(row.id, { qty: Number(e.target.value) })} />
+                        <input className={numberInputClass} type="number" min="0" value={row.qty} onChange={(e) => updatePlumbingExtra(row.id, { qty: editableNumber(e.target.value) })} />
                       </Field>
                       <Field label="單位">
                         <input className={numberInputClass} value={row.unit} onChange={(e) => updatePlumbingExtra(row.id, { unit: e.target.value })} />
@@ -1580,7 +1580,7 @@ function App() {
                         <input className={fullTextInputClass} value={row.customText} onChange={(e) => updatePaintingExtra(row.id, { customText: e.target.value })} />
                       </Field>
                       <Field label="數量">
-                        <input className={numberInputClass} type="number" min="0" value={row.qty} onChange={(e) => updatePaintingExtra(row.id, { qty: Number(e.target.value) })} />
+                        <input className={numberInputClass} type="number" min="0" value={row.qty} onChange={(e) => updatePaintingExtra(row.id, { qty: editableNumber(e.target.value) })} />
                       </Field>
                       <Field label="單位">
                         <input className={numberInputClass} value={row.unit} onChange={(e) => updatePaintingExtra(row.id, { unit: e.target.value })} />
@@ -1632,7 +1632,7 @@ function App() {
                         <input className={fullTextInputClass} value={row.customText} onChange={(e) => updateAirConditioning(row.id, { customText: e.target.value })} />
                       </Field>
                       <Field label="數量">
-                        <input className={numberInputClass} type="number" min="0" value={row.qty} onChange={(e) => updateAirConditioning(row.id, { qty: Number(e.target.value) })} />
+                        <input className={numberInputClass} type="number" min="0" value={row.qty} onChange={(e) => updateAirConditioning(row.id, { qty: editableNumber(e.target.value) })} />
                       </Field>
                       <Field label="單位">
                         <input className={numberInputClass} value={row.unit} onChange={(e) => updateAirConditioning(row.id, { unit: e.target.value })} />

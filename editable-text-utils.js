@@ -11,5 +11,9 @@
     return typeof row?.unit === "string" ? row.unit : fallback;
   }
 
-  return { editableText, editableUnit };
+  function editableNumber(value) {
+    return value === "" ? "" : Number(value);
+  }
+
+  return { editableNumber, editableText, editableUnit };
 });
