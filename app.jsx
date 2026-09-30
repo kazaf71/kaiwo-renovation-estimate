@@ -2,6 +2,7 @@ const pricing = JSON.parse(document.querySelector("#pricing-data").textContent);
 
 const { cleanNote, noteLine } = window.KaiwoNotes;
 const { editableNumber, editableText, editableUnit } = window.KaiwoEditableText;
+const { areaChoices, moveItemToArea } = window.KaiwoAreas;
 const {
   buildPaymentLines,
   buildEstimateTitles,
@@ -151,6 +152,16 @@ function Field({ label, children }) {
       <span className="text-sm font-bold text-stone-700">{label}</span>
       {children}
     </label>
+  );
+}
+
+function AreaSelect({ value, onChange, selectedAreas, allAreas, includeWhole = false }) {
+  return (
+    <Field label="施工區域">
+      <select aria-label="施工區域" className="rounded-lg border border-coffee/20 bg-white px-3 py-2" value={value} onChange={(event) => onChange(event.target.value)}>
+        {areaChoices(value, selectedAreas, allAreas, includeWhole).map((area) => <option key={area}>{area}</option>)}
+      </select>
+    </Field>
   );
 }
 
@@ -1223,7 +1234,8 @@ function App() {
                       <div className="grid gap-3">
                         {areaRows.map((row) => (
                           <div key={row.id} className="rounded-lg border border-coffee/10 bg-creamSoft p-4">
-                            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[1.1fr_1fr_110px_90px_90px_120px]">
+                            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[130px_1fr_1fr_110px_90px_90px_120px]">
+                              <AreaSelect value={row.area} selectedAreas={selectedAreas} allAreas={allAreas} onChange={(area) => { setCabinetRows((rows) => moveItemToArea(rows, row.id, area)); setShowResult(false); }} />
                               <Field label="高度分類">
                                 <select className="rounded-lg border border-coffee/20 px-3 py-2" value={row.type} onChange={(e) => updateCabinetType(row.id, e.target.value)}>
                                   {row.type === "furniture" && <option value="furniture">舊版綜合櫃體</option>}
@@ -1291,6 +1303,7 @@ function App() {
                       {areaRows.map((row) => (
                         <div key={row.id} className="rounded-lg border border-coffee/10 bg-cream p-4">
                           <div className="wood-entry-grid">
+                            <AreaSelect value={row.area} selectedAreas={selectedAreas} allAreas={allAreas} onChange={(area) => { setWoodRows((rows) => moveItemToArea(rows, row.id, area)); setShowResult(false); }} />
                             <Field label="木作項目">
                               <select className="rounded-lg border border-coffee/20 px-3 py-2" value={row.itemId} onChange={(e) => updateWoodItem(row.id, e.target.value)}>
                                 {pricing.woodworkItems.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
@@ -1332,11 +1345,7 @@ function App() {
                     {pricing.flooring.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
                   </select>
                 </Field>
-                <Field label="區域">
-                  <select className="rounded-lg border border-coffee/20 bg-white px-3 py-3 disabled:bg-stone-100 disabled:text-stone-400" value={floorArea} onChange={(e) => { setFloorArea(e.target.value); setShowResult(false); }}>
-                    {(["全室", ...(selectedAreas.length ? selectedAreas : allAreas)]).map((area) => <option key={area}>{area}</option>)}
-                  </select>
-                </Field>
+                <AreaSelect value={floorArea} selectedAreas={selectedAreas} allAreas={allAreas} includeWhole onChange={(area) => { setFloorArea(area); setShowResult(false); }} />
                 <Field label="項目文字">
                   <input className={fullTextInputClass} value={floorText} onChange={(e) => { setFloorText(e.target.value); setShowResult(false); }} />
                 </Field>
@@ -1376,11 +1385,7 @@ function App() {
                 {masonryTotals.map((row) => (
                   <div key={row.id} className="rounded-lg border border-coffee/10 bg-white p-4">
                     <div className="grid gap-3 md:grid-cols-[130px_1fr_1fr_90px_90px_120px_auto] md:items-end">
-                      <Field label="區域">
-                        <select className="rounded-lg border border-coffee/20 px-3 py-2" value={row.area} onChange={(e) => updateMasonry(row.id, { area: e.target.value })}>
-                          {(selectedAreas.length ? selectedAreas : allAreas).map((area) => <option key={area}>{area}</option>)}
-                        </select>
-                      </Field>
+                      <AreaSelect value={row.area} selectedAreas={selectedAreas} allAreas={allAreas} onChange={(area) => updateMasonry(row.id, { area })} />
                       <Field label="土水項目">
                         <select className="rounded-lg border border-coffee/20 px-3 py-2" value={row.itemId} onChange={(e) => updateMasonryItem(row.id, e.target.value)}>
                           {pricing.masonryItems.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
@@ -1415,11 +1420,7 @@ function App() {
             <div className="grid gap-4">
               <div className="rounded-lg border border-coffee/10 bg-white p-4">
                 <div className="grid gap-3 md:grid-cols-[130px_1fr_100px_100px_140px] md:items-end">
-                  <Field label="區域">
-                    <select className="rounded-lg border border-coffee/20 px-3 py-2" value={protectionArea} onChange={(e) => { setProtectionArea(e.target.value); setShowResult(false); }}>
-                      {(["全室", ...(selectedAreas.length ? selectedAreas : allAreas)]).map((area) => <option key={area}>{area}</option>)}
-                    </select>
-                  </Field>
+                  <AreaSelect value={protectionArea} selectedAreas={selectedAreas} allAreas={allAreas} includeWhole onChange={(area) => { setProtectionArea(area); setShowResult(false); }} />
                   <Field label="項目文字">
                     <input className={fullTextInputClass} value={protectionText} onChange={(e) => { setProtectionText(e.target.value); setShowResult(false); }} />
                   </Field>
@@ -1443,11 +1444,7 @@ function App() {
             <div className="grid gap-4">
               <div className="rounded-lg border border-coffee/10 bg-white p-4">
                 <div className="grid gap-3 md:grid-cols-[130px_1fr_100px_100px_140px] md:items-end">
-                  <Field label="區域">
-                    <select className="rounded-lg border border-coffee/20 px-3 py-2" value={cleanupArea} onChange={(e) => { setCleanupArea(e.target.value); setShowResult(false); }}>
-                      {(["全室", ...(selectedAreas.length ? selectedAreas : allAreas)]).map((area) => <option key={area}>{area}</option>)}
-                    </select>
-                  </Field>
+                  <AreaSelect value={cleanupArea} selectedAreas={selectedAreas} allAreas={allAreas} includeWhole onChange={(area) => { setCleanupArea(area); setShowResult(false); }} />
                   <Field label="項目文字">
                     <input className={fullTextInputClass} value={cleanupText} onChange={(e) => { setCleanupText(e.target.value); setShowResult(false); }} />
                   </Field>
@@ -1472,11 +1469,7 @@ function App() {
               <div className="rounded-lg bg-white p-4 text-sm leading-7 text-stone-700">
                 <div>基礎估算：{condition}，參考 {money(plumbingBaseLow)}-{money(plumbingBaseHigh)}元／坪，填入實際單價後自動列入估價。</div>
                 <div className="mt-3 grid gap-3 md:grid-cols-[130px_1fr_130px]">
-                  <Field label="區域">
-                    <select className="rounded-lg border border-coffee/20 px-3 py-2" value={plumbingBaseArea} onChange={(e) => { setPlumbingBaseArea(e.target.value); setShowResult(false); }}>
-                      {(["全室", ...(selectedAreas.length ? selectedAreas : allAreas)]).map((area) => <option key={area}>{area}</option>)}
-                    </select>
-                  </Field>
+                  <AreaSelect value={plumbingBaseArea} selectedAreas={selectedAreas} allAreas={allAreas} includeWhole onChange={(area) => { setPlumbingBaseArea(area); setShowResult(false); }} />
                   <Field label="基礎項目文字">
                     <input className={fullTextInputClass} value={plumbingBaseText} onChange={(e) => { setPlumbingBaseText(e.target.value); setShowResult(false); }} />
                   </Field>
@@ -1499,11 +1492,7 @@ function App() {
                 {plumbingExtraTotals.map((row) => (
                   <div key={row.id} className="rounded-lg border border-coffee/10 bg-white p-4">
                     <div className="grid gap-3 md:grid-cols-[130px_1fr_1fr_90px_90px_120px_auto] md:items-end">
-                      <Field label="區域">
-                        <select className="rounded-lg border border-coffee/20 px-3 py-2" value={row.area} onChange={(e) => updatePlumbingExtra(row.id, { area: e.target.value })}>
-                          {(selectedAreas.length ? selectedAreas : allAreas).map((area) => <option key={area}>{area}</option>)}
-                        </select>
-                      </Field>
+                      <AreaSelect value={row.area} selectedAreas={selectedAreas} allAreas={allAreas} onChange={(area) => updatePlumbingExtra(row.id, { area })} />
                       <Field label="水電項目">
                         <select className="rounded-lg border border-coffee/20 px-3 py-2" value={row.itemId} onChange={(e) => updatePlumbingItem(row.id, e.target.value)}>
                           {pricing.plumbingExtraItems.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
@@ -1539,11 +1528,7 @@ function App() {
               <div className="rounded-lg bg-white p-4 text-sm leading-7 text-stone-700">
                 <div>基礎估算：{condition}，參考 {money(paintingBaseLow)}-{money(paintingBaseHigh)}元／坪，填入實際單價後自動列入估價。</div>
                 <div className="mt-3 grid gap-3 md:grid-cols-[130px_1fr_130px]">
-                  <Field label="區域">
-                    <select className="rounded-lg border border-coffee/20 px-3 py-2" value={paintingBaseArea} onChange={(e) => { setPaintingBaseArea(e.target.value); setShowResult(false); }}>
-                      {(["全室", ...(selectedAreas.length ? selectedAreas : allAreas)]).map((area) => <option key={area}>{area}</option>)}
-                    </select>
-                  </Field>
+                  <AreaSelect value={paintingBaseArea} selectedAreas={selectedAreas} allAreas={allAreas} includeWhole onChange={(area) => { setPaintingBaseArea(area); setShowResult(false); }} />
                   <Field label="基礎項目文字">
                     <input className={fullTextInputClass} value={paintingBaseText} onChange={(e) => { setPaintingBaseText(e.target.value); setShowResult(false); }} />
                   </Field>
@@ -1566,11 +1551,7 @@ function App() {
                 {paintingExtraTotals.map((row) => (
                   <div key={row.id} className="rounded-lg border border-coffee/10 bg-white p-4">
                     <div className="grid gap-3 md:grid-cols-[130px_1fr_1fr_90px_90px_120px_auto] md:items-end">
-                      <Field label="區域">
-                        <select className="rounded-lg border border-coffee/20 px-3 py-2" value={row.area} onChange={(e) => updatePaintingExtra(row.id, { area: e.target.value })}>
-                          {(selectedAreas.length ? selectedAreas : allAreas).map((area) => <option key={area}>{area}</option>)}
-                        </select>
-                      </Field>
+                      <AreaSelect value={row.area} selectedAreas={selectedAreas} allAreas={allAreas} onChange={(area) => updatePaintingExtra(row.id, { area })} />
                       <Field label="油漆項目">
                         <select className="rounded-lg border border-coffee/20 px-3 py-2" value={row.itemId} onChange={(e) => updatePaintingItem(row.id, e.target.value)}>
                           {pricing.paintingExtraItems.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
@@ -1618,11 +1599,7 @@ function App() {
                 {airConditioningTotals.map((row) => (
                   <div key={row.id} className="rounded-lg border border-coffee/10 bg-white p-4">
                     <div className="grid gap-3 md:grid-cols-[130px_1fr_1fr_90px_90px_120px_auto] md:items-end">
-                      <Field label="區域">
-                        <select className="rounded-lg border border-coffee/20 px-3 py-2" value={row.area} onChange={(e) => updateAirConditioning(row.id, { area: e.target.value })}>
-                          {(selectedAreas.length ? selectedAreas : allAreas).map((area) => <option key={area}>{area}</option>)}
-                        </select>
-                      </Field>
+                      <AreaSelect value={row.area} selectedAreas={selectedAreas} allAreas={allAreas} onChange={(area) => updateAirConditioning(row.id, { area })} />
                       <Field label="空調項目">
                         <select className="rounded-lg border border-coffee/20 px-3 py-2" value={row.itemId} onChange={(e) => updateAirConditioningItem(row.id, e.target.value)}>
                           {pricing.airConditioningItems.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
@@ -1661,10 +1638,12 @@ function App() {
                 <strong>小計 NT$ {moneyRange(trade.subtotal)}</strong>
                 <button type="button" title="刪除工種" aria-label="刪除工種" onClick={() => { if (window.confirm("確定刪除此工種及全部項目？")) { setCustomTrades((trades) => trades.filter((item) => item.id !== trade.id)); setShowResult(false); } }}>×</button>
               </div>
-              <div className="custom-table-wrap"><table className="custom-table"><thead><tr><th>項目</th><th>區域</th><th>數量</th><th>單位</th><th>單價</th><th>單項總價</th><th></th></tr></thead><tbody>
+              <div className="custom-table-wrap"><table className="custom-table"><thead><tr><th>項目</th><th>施工區域</th><th>數量</th><th>單位</th><th>單價</th><th>單項總價</th><th></th></tr></thead><tbody>
                 {trade.rows.map((row) => <React.Fragment key={row.id}>
                   <tr>
-                    {[['name', '項目', 'text'], ['area', '區域', 'text'], ['qty', '數量', 'number'], ['unit', '單位', 'text'], ['price', '單價', 'number']].map(([key, label, type]) => <td key={key}><input aria-label={label} placeholder={key === 'price' ? '選填' : label} type={type} min={type === 'number' ? 0 : undefined} step={type === 'number' ? 'any' : undefined} value={row[key]} onChange={(e) => updateCustomTrade(trade.id, {rows: trade.rows.map((item) => item.id === row.id ? {...item, [key]: type === 'number' && e.target.value !== '' ? Math.max(0, Number(e.target.value)) : e.target.value} : item)})} /></td>)}
+                    <td><input aria-label="項目" placeholder="項目" value={row.name} onChange={(e) => updateCustomTrade(trade.id, {rows: trade.rows.map((item) => item.id === row.id ? {...item, name: e.target.value} : item)})} /></td>
+                    <td><select aria-label="施工區域" value={row.area} onChange={(e) => updateCustomTrade(trade.id, {rows: moveItemToArea(trade.rows, row.id, e.target.value)})}>{areaChoices(row.area, selectedAreas, allAreas, true).map((area) => <option key={area}>{area}</option>)}</select></td>
+                    {[['qty', '數量', 'number'], ['unit', '單位', 'text'], ['price', '單價', 'number']].map(([key, label, type]) => <td key={key}><input aria-label={label} placeholder={key === 'price' ? '選填' : label} type={type} min={type === 'number' ? 0 : undefined} step={type === 'number' ? 'any' : undefined} value={row[key]} onChange={(e) => updateCustomTrade(trade.id, {rows: trade.rows.map((item) => item.id === row.id ? {...item, [key]: type === 'number' && e.target.value !== '' ? Math.max(0, Number(e.target.value)) : e.target.value} : item)})} /></td>)}
                     <td className="custom-amount">{row.price === '' ? '未填單價' : moneyRange(actualPricedPair(row.qty, row.price))}</td>
                     <td><button title="刪除項目" aria-label="刪除項目" type="button" onClick={() => { if (window.confirm("確定刪除此項目？")) updateCustomTrade(trade.id, {rows: trade.rows.filter((item) => item.id !== row.id)}); }}>×</button></td>
                   </tr>
