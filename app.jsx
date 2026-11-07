@@ -1909,6 +1909,7 @@ function App() {
 }
 
 function SummaryLine({ label, range }) {
+  if (!Number(range?.low || 0) && !Number(range?.high || 0)) return null;
   return (
     <div className="flex items-center justify-between gap-3 border-b border-coffee/10 py-2">
       <span>{label}</span>
