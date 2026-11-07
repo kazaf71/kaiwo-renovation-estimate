@@ -14,7 +14,7 @@ const {
   estimateOdsColumnWidths,
   formatCabinetQuantity,
   formatProjectLocation,
-  groupEstimateRowsByArea,
+  groupEstimateRowsByTradeAndArea,
   isPricedItem,
   toEstimateDetailCells,
   toComparisonSafeRow
@@ -695,7 +695,8 @@ function App() {
   const estimateRows = rawEstimateRows.map((row) => toComparisonSafeRow(row, comparisonSafeMode, `NT$ ${moneyRange(row.subtotal)}`));
 
   const estimateAreaOrder = ["客廳", "全室", ...allAreas.filter((area) => area !== "客廳")];
-  const estimateGroups = groupEstimateRowsByArea(estimateRows, estimateAreaOrder);
+  const estimateTradeOrder = ["櫃體工程", "木作工程", "地板工程", "土水工程", "保護工程", "清運廢棄物工程", "水電工程", "油漆工程", "空調工程"];
+  const estimateTradeGroups = groupEstimateRowsByTradeAndArea(estimateRows, estimateTradeOrder, estimateAreaOrder);
   const totalRows = [
     ["稅前工程總額", grandTotal],
     ...(managementRate > 0 ? [[`監管費（${managementPercent}%）`, managementTotal]] : []),
@@ -779,23 +780,31 @@ function App() {
       ])
     ];
 
-    estimateGroups.forEach((group) => {
-      tableRows.push(odsCellsRow([{ value: `施工區域：${group.area}`, span: 6, style: "section" }]));
-      group.rows.forEach((row) => {
-        const cells = toEstimateDetailCells(row, `NT$ ${moneyRange(row.subtotal)}`);
+    estimateTradeGroups.forEach((tradeGroup) => {
+      tableRows.push(odsCellsRow([{ value: `工種：${tradeGroup.trade}`, span: 6, style: "section" }]));
+      tradeGroup.areas.forEach((areaGroup) => {
+        tableRows.push(odsCellsRow([{ value: `施工區域：${areaGroup.area}`, span: 6, style: "areaSection" }]));
+        areaGroup.rows.forEach((row) => {
+          const cells = toEstimateDetailCells(row, `NT$ ${moneyRange(row.subtotal)}`);
+          tableRows.push(odsCellsRow([
+            { value: cells[0], style: "bodyItem" },
+            { value: cells[1], style: "bodyCenter" },
+            { value: cells[2], style: "bodyCenter" },
+            { value: cells[3], style: "bodyAmount" },
+            { value: cells[4], style: "bodyAmountStrong" },
+            { value: cells[5], style: "note" }
+          ]));
+        });
         tableRows.push(odsCellsRow([
-          { value: cells[0], style: "bodyItem" },
-          { value: cells[1], style: "bodyCenter" },
-          { value: cells[2], style: "bodyCenter" },
-          { value: cells[3], style: "bodyAmount" },
-          { value: cells[4], style: "bodyAmountStrong" },
-          { value: cells[5], style: "note" }
+          { value: `${areaGroup.area} 小計`, span: 4, style: "subtotalLabel" },
+          { value: `NT$ ${moneyRange(areaGroup.subtotal)}`, style: "subtotalAmount" },
+          { value: "", style: "subtotal" }
         ]));
       });
       tableRows.push(odsCellsRow([
-        { value: `${group.area} 小計`, span: 4, style: "subtotalLabel" },
-        { value: `NT$ ${moneyRange(group.subtotal)}`, style: "subtotalAmount" },
-        { value: "", style: "subtotal" }
+        { value: `${tradeGroup.trade} 小計`, span: 4, style: "tradeSubtotalLabel" },
+        { value: `NT$ ${moneyRange(tradeGroup.subtotal)}`, style: "tradeSubtotalAmount" },
+        { value: "", style: "tradeSubtotal" }
       ]));
       tableRows.push(odsRow(["", "", "", "", "", ""], "spacer"));
     });
@@ -837,6 +846,7 @@ function App() {
     <style:style style:name="headCenter" style:family="table-cell"><style:table-cell-properties fo:background-color="#5B4637" fo:border="0.5pt solid #5B4637" fo:padding="0.09cm"/><style:paragraph-properties fo:text-align="center"/><style:text-properties fo:font-size="9.5pt" fo:font-weight="bold" fo:color="#FFFFFF"/></style:style>
     <style:style style:name="headAmount" style:family="table-cell"><style:table-cell-properties fo:background-color="#5B4637" fo:border="0.5pt solid #5B4637" fo:padding="0.09cm"/><style:paragraph-properties fo:text-align="end"/><style:text-properties fo:font-size="9.5pt" fo:font-weight="bold" fo:color="#FFFFFF"/></style:style>
     <style:style style:name="section" style:family="table-cell"><style:table-cell-properties fo:background-color="#EADBCB" fo:border="0.5pt solid #A88C72" fo:padding="0.09cm"/><style:text-properties fo:font-size="10.5pt" fo:font-weight="bold" fo:color="#3F2C22"/></style:style>
+    <style:style style:name="areaSection" style:family="table-cell"><style:table-cell-properties fo:background-color="#F4EDE4" fo:border="0.5pt solid #B69E83" fo:padding="0.08cm"/><style:text-properties fo:font-size="9.8pt" fo:font-weight="bold" fo:color="#5B4637"/></style:style>
     <style:style style:name="body" style:family="table-cell"><style:table-cell-properties fo:border="0.5pt solid #D8C8B5" fo:padding="0.07cm"/><style:text-properties fo:font-size="9.3pt" fo:color="#2F2721"/></style:style>
     <style:style style:name="bodyItem" style:family="table-cell"><style:table-cell-properties fo:border="0.5pt solid #D8C8B5" fo:padding="0.07cm"/><style:text-properties fo:font-size="9.3pt" fo:color="#2F2721"/></style:style>
     <style:style style:name="bodyCenter" style:family="table-cell"><style:table-cell-properties fo:border="0.5pt solid #D8C8B5" fo:padding="0.07cm"/><style:paragraph-properties fo:text-align="center"/><style:text-properties fo:font-size="9.3pt" fo:color="#2F2721"/></style:style>
@@ -845,6 +855,9 @@ function App() {
     <style:style style:name="subtotal" style:family="table-cell"><style:table-cell-properties fo:background-color="#F8F1E8" fo:border="0.5pt solid #B69E83" fo:padding="0.08cm"/></style:style>
     <style:style style:name="subtotalLabel" style:family="table-cell"><style:table-cell-properties fo:background-color="#F8F1E8" fo:border="0.5pt solid #B69E83" fo:padding="0.08cm"/><style:paragraph-properties fo:text-align="end"/><style:text-properties fo:font-size="9.5pt" fo:font-weight="bold" fo:color="#4B3428"/></style:style>
     <style:style style:name="subtotalAmount" style:family="table-cell"><style:table-cell-properties fo:background-color="#F8F1E8" fo:border="0.5pt solid #B69E83" fo:padding="0.08cm"/><style:paragraph-properties fo:text-align="end"/><style:text-properties fo:font-size="9.5pt" fo:font-weight="bold" fo:color="#4B3428"/></style:style>
+    <style:style style:name="tradeSubtotal" style:family="table-cell"><style:table-cell-properties fo:background-color="#EADBCB" fo:border="0.5pt solid #8B6F58" fo:padding="0.08cm"/></style:style>
+    <style:style style:name="tradeSubtotalLabel" style:family="table-cell"><style:table-cell-properties fo:background-color="#EADBCB" fo:border="0.5pt solid #8B6F58" fo:padding="0.08cm"/><style:paragraph-properties fo:text-align="end"/><style:text-properties fo:font-size="9.8pt" fo:font-weight="bold" fo:color="#3F2C22"/></style:style>
+    <style:style style:name="tradeSubtotalAmount" style:family="table-cell"><style:table-cell-properties fo:background-color="#EADBCB" fo:border="0.5pt solid #8B6F58" fo:padding="0.08cm"/><style:paragraph-properties fo:text-align="end"/><style:text-properties fo:font-size="9.8pt" fo:font-weight="bold" fo:color="#3F2C22"/></style:style>
     <style:style style:name="total" style:family="table-cell"><style:table-cell-properties fo:border="0.5pt solid #8B6F58" fo:padding="0.08cm"/></style:style>
     <style:style style:name="totalLabel" style:family="table-cell"><style:table-cell-properties fo:border="0.5pt solid #8B6F58" fo:padding="0.08cm"/><style:paragraph-properties fo:text-align="end"/><style:text-properties fo:font-size="9.8pt" fo:font-weight="bold" fo:color="#4B3428"/></style:style>
     <style:style style:name="totalAmount" style:family="table-cell"><style:table-cell-properties fo:border="0.5pt solid #8B6F58" fo:padding="0.08cm"/><style:paragraph-properties fo:text-align="end"/><style:text-properties fo:font-size="9.8pt" fo:font-weight="bold" fo:color="#4B3428"/></style:style>
@@ -917,13 +930,17 @@ function App() {
       `<tr>${estimateDetailHeaders.map((value) => htmlCell(value, "th")).join("")}</tr>`
     ];
 
-    estimateGroups.forEach((group) => {
-      rows.push(`<tr>${htmlCell(`施工區域：${group.area}`, "th", 'colspan="6" class="section"')}</tr>`);
-      group.rows.forEach((row) => {
-        const cells = toEstimateDetailCells(row, `NT$ ${moneyRange(row.subtotal)}`);
-        rows.push(`<tr>${cells.map((value, index) => htmlCell(value, "td", index === 5 ? 'class="note item-note-output"' : "")).join("")}</tr>`);
+    estimateTradeGroups.forEach((tradeGroup) => {
+      rows.push(`<tr>${htmlCell(`工種：${tradeGroup.trade}`, "th", 'colspan="6" class="trade-section"')}</tr>`);
+      tradeGroup.areas.forEach((areaGroup) => {
+        rows.push(`<tr>${htmlCell(`施工區域：${areaGroup.area}`, "th", 'colspan="6" class="area-section"')}</tr>`);
+        areaGroup.rows.forEach((row) => {
+          const cells = toEstimateDetailCells(row, `NT$ ${moneyRange(row.subtotal)}`);
+          rows.push(`<tr>${cells.map((value, index) => htmlCell(value, "td", index === 5 ? 'class="note item-note-output"' : "")).join("")}</tr>`);
+        });
+        rows.push(`<tr>${htmlCell(`${areaGroup.area} 小計`, "td", 'colspan="4" class="subtotal"')}${htmlCell(`NT$ ${moneyRange(areaGroup.subtotal)}`, "td", 'class="subtotal amount"')}${htmlCell("", "td", 'class="subtotal"')}</tr>`);
       });
-      rows.push(`<tr>${htmlCell(`${group.area} 小計`, "td", 'colspan="4" class="subtotal"')}${htmlCell(`NT$ ${moneyRange(group.subtotal)}`, "td", 'class="subtotal amount"')}${htmlCell("", "td", 'class="subtotal"')}</tr>`);
+      rows.push(`<tr>${htmlCell(`${tradeGroup.trade} 小計`, "td", 'colspan="4" class="trade-subtotal"')}${htmlCell(`NT$ ${moneyRange(tradeGroup.subtotal)}`, "td", 'class="trade-subtotal amount"')}${htmlCell("", "td", 'class="trade-subtotal"')}</tr>`);
     });
 
     [...totalRows, [finalTotalLabel, finalTotal]].forEach(([label, total]) => {
@@ -942,8 +959,10 @@ function App() {
     th, td { border: 1px solid #b69e83; padding: 7px 8px; font-size: 12px; vertical-align: middle; word-break: break-word; white-space: normal; }
     th { background: #6f5948; color: #fff; }
     .title { background: #f2e7d8; color: #4b3428; font-size: 24px; text-align: center; padding: 12px; }
-    .section { background: #efe3d3; color: #4b3428; text-align: left; }
+    .trade-section { background: #d9c2a8; color: #3f2c22; text-align: left; font-size: 13px; }
+    .area-section { background: #efe3d3; color: #4b3428; text-align: left; }
     .subtotal { background: #f8f1e8; font-weight: bold; }
+    .trade-subtotal { background: #eadbcb; font-weight: bold; }
     .total { font-weight: bold; }
     .amount { text-align: right; }
     .note { color: #5d4a3d; }
@@ -971,7 +990,7 @@ function App() {
     const now = new Date();
     const today = now.toLocaleDateString("zh-TW");
     const terms = estimateTerms;
-    const pages = [estimateGroups.map((group) => ({ ...group, showSubtotal: true }))];
+    const pages = [estimateTradeGroups];
 
     const host = document.createElement("div");
     host.setAttribute("aria-hidden", "true");
@@ -987,18 +1006,17 @@ function App() {
         const sheet = document.createElement("section");
         sheet.style.cssText = "box-sizing:border-box;width:794px;min-height:1123px;padding:34px;background:#fff;color:#252525;font-family:'Microsoft JhengHei','Noto Sans TC',Arial,sans-serif;display:flex;flex-direction:column;";
 
-        const tableRows = pageGroups.flatMap((group) => {
-          const sectionTitle = `${group.area}${group.continued ? "（續）" : ""}`;
-          const rows = [
-            `<tr class="trade"><td colspan="6">施工區域：${xmlEscape(sectionTitle)}</td></tr>`,
-            ...group.rows.map((row) => {
+        const tableRows = pageGroups.flatMap((tradeGroup) => {
+          const rows = [`<tr class="trade"><td colspan="6">工種：${xmlEscape(tradeGroup.trade)}</td></tr>`];
+          tradeGroup.areas.forEach((areaGroup) => {
+            rows.push(`<tr class="area"><td colspan="6">施工區域：${xmlEscape(areaGroup.area)}</td></tr>`);
+            areaGroup.rows.forEach((row) => {
               const cells = toEstimateDetailCells(row, `NT$ ${moneyRange(row.subtotal)}`);
-              return `<tr>${cells.map((value, index) => `<td class="${[3, 4].includes(index) ? "amount" : ""}">${xmlEscape(value)}</td>`).join("")}</tr>`;
-            })
-          ];
-          if (group.showSubtotal) {
-            rows.push(`<tr class="subtotal"><td colspan="4">${xmlEscape(group.area)} 小計</td><td class="amount">NT$ ${xmlEscape(moneyRange(group.subtotal))}</td><td></td></tr>`);
-          }
+              rows.push(`<tr>${cells.map((value, index) => `<td class="${[3, 4].includes(index) ? "amount" : ""}">${xmlEscape(value)}</td>`).join("")}</tr>`);
+            });
+            rows.push(`<tr class="subtotal"><td colspan="4">${xmlEscape(areaGroup.area)} 小計</td><td class="amount">NT$ ${xmlEscape(moneyRange(areaGroup.subtotal))}</td><td></td></tr>`);
+          });
+          rows.push(`<tr class="trade-subtotal"><td colspan="4">${xmlEscape(tradeGroup.trade)} 小計</td><td class="amount">NT$ ${xmlEscape(moneyRange(tradeGroup.subtotal))}</td><td></td></tr>`);
           return rows;
         }).join("");
 
@@ -1043,8 +1061,10 @@ function App() {
             .detail { width: 100%; border-collapse: collapse; table-layout: fixed; }
             .detail th, .detail td { border: 1px solid #b8b8b8; padding: 6px; font-size: 10px; line-height: 1.35; vertical-align: top; word-break: break-word; }
             .detail thead th { background: #3f3f3f; color: #fff; text-align: left; }
-            .detail .trade td { background: #d4d4d4; font-weight: 900; color: #111; }
+            .detail .trade td { background: #bfa88e; font-weight: 900; color: #111; }
+            .detail .area td { background: #e5ded5; font-weight: 800; color: #222; }
             .detail .subtotal td { background: #ededed; font-weight: 800; text-align: right; }
+            .detail .trade-subtotal td { background: #d8c7b3; font-weight: 900; text-align: right; }
             .detail .amount { text-align: right; font-weight: 700; }
             .empty { border: 1px solid #bbb; padding: 24px; text-align: center; color: #666; font-size: 12px; }
             .totals { width: 100%; margin-top: 15px; border-collapse: collapse; }
@@ -1108,12 +1128,16 @@ function App() {
   };
 
   const detailText = [
-    "各區域估價明細",
+    "各工種估價明細",
     estimateDetailHeaders.join("｜"),
-    ...estimateGroups.flatMap((group) => [
-      `施工區域：${group.area}`,
-      ...group.rows.map((row) => toEstimateDetailCells(row, `NT$ ${moneyRange(row.subtotal)}`).join("｜")),
-      [`${group.area}小計`, "", "", "", `NT$ ${moneyRange(group.subtotal)}`, ""].join("｜")
+    ...estimateTradeGroups.flatMap((tradeGroup) => [
+      `工種：${tradeGroup.trade}`,
+      ...tradeGroup.areas.flatMap((areaGroup) => [
+        `施工區域：${areaGroup.area}`,
+        ...areaGroup.rows.map((row) => toEstimateDetailCells(row, `NT$ ${moneyRange(row.subtotal)}`).join("｜")),
+        [`${areaGroup.area}小計`, "", "", "", `NT$ ${moneyRange(areaGroup.subtotal)}`, ""].join("｜")
+      ]),
+      [`${tradeGroup.trade}小計`, "", "", "", `NT$ ${moneyRange(tradeGroup.subtotal)}`, ""].join("｜")
     ]),
     ...totalRows.map(([label, total]) => [label, "", "", "", `NT$ ${moneyRange(total)}`, ""].join("｜")),
     [finalTotalLabel, "", "", "", `NT$ ${moneyRange(finalTotal)}`, ""].join("｜")
@@ -1683,7 +1707,7 @@ function App() {
 
           <div className="mt-5 overflow-x-auto rounded-lg border border-coffee/15 bg-white">
             <div className="border-b border-coffee/10 bg-wood/20 px-4 py-3">
-              <h3 className="text-lg font-black text-coffee">各區域估價明細</h3>
+              <h3 className="text-lg font-black text-coffee">各工種估價明細</h3>
               <p className="mt-1 text-sm text-stone-600">{comparisonSafeMode ? "防比價模式已啟用：所有項目統一以 1 式及該項總價列示。" : "依目前填寫內容產生，備註會顯示於各項目右側。"}</p>
             </div>
             <table className="estimate-detail-desktop hidden md:table print:table w-full min-w-[980px] table-fixed border-collapse text-sm">
@@ -1701,25 +1725,37 @@ function App() {
                 </tr>
               </thead>
               <tbody>
-                {estimateGroups.map((group) => (
-                  <React.Fragment key={group.area}>
-                    <tr className="bg-wood/25">
-                      <td className="border-b border-coffee/10 px-3 py-2.5 font-black text-coffee" colSpan="6">施工區域：{group.area}</td>
+                {estimateTradeGroups.map((tradeGroup) => (
+                  <React.Fragment key={tradeGroup.trade}>
+                    <tr className="bg-wood/55">
+                      <td className="border-b border-coffee/20 px-3 py-3 text-base font-black text-coffee" colSpan="6">工種：{tradeGroup.trade}</td>
                     </tr>
-                    {group.rows.map((row, index) => (
-                      <tr key={`${row.trade}-${row.name}-${index}`} className="odd:bg-white even:bg-creamSoft">
-                        <td className="break-words border-b border-coffee/10 px-3 py-2.5 text-stone-800">{row.trade ? `${row.trade}｜${row.name}` : row.name}</td>
-                        <td className="border-b border-coffee/10 px-3 py-2.5 text-right text-stone-700">{row.qty}</td>
-                        <td className="border-b border-coffee/10 px-3 py-2.5 text-stone-700">{row.unit}</td>
-                        <td className="border-b border-coffee/10 px-3 py-2.5 text-right text-stone-700">{row.unitPrice}</td>
-                        <td className="border-b border-coffee/10 px-3 py-2.5 text-right font-bold text-stone-800">NT$ {moneyRange(row.subtotal)}</td>
-                        <td className="whitespace-normal break-words border-b border-coffee/10 px-3 py-2.5 text-stone-700">{cleanNote(row.note)}</td>
-                      </tr>
+                    {tradeGroup.areas.map((areaGroup) => (
+                      <React.Fragment key={`${tradeGroup.trade}-${areaGroup.area}`}>
+                        <tr className="bg-wood/20">
+                          <td className="border-b border-coffee/10 px-3 py-2.5 font-black text-coffee" colSpan="6">施工區域：{areaGroup.area}</td>
+                        </tr>
+                        {areaGroup.rows.map((row, index) => (
+                          <tr key={`${tradeGroup.trade}-${areaGroup.area}-${row.name}-${index}`} className="odd:bg-white even:bg-creamSoft">
+                            <td className="break-words border-b border-coffee/10 px-3 py-2.5 text-stone-800">{row.name}</td>
+                            <td className="border-b border-coffee/10 px-3 py-2.5 text-right text-stone-700">{row.qty}</td>
+                            <td className="border-b border-coffee/10 px-3 py-2.5 text-stone-700">{row.unit}</td>
+                            <td className="border-b border-coffee/10 px-3 py-2.5 text-right text-stone-700">{row.unitPrice}</td>
+                            <td className="border-b border-coffee/10 px-3 py-2.5 text-right font-bold text-stone-800">NT$ {moneyRange(row.subtotal)}</td>
+                            <td className="whitespace-normal break-words border-b border-coffee/10 px-3 py-2.5 text-stone-700">{cleanNote(row.note)}</td>
+                          </tr>
+                        ))}
+                        <tr className="bg-cream">
+                          <td className="border-b border-coffee/10 px-3 py-2.5 text-right font-black text-coffee" colSpan="4">{areaGroup.area} 小計</td>
+                          <td className="border-b border-coffee/10 px-3 py-2.5 text-right font-black text-coffee">NT$ {moneyRange(areaGroup.subtotal)}</td>
+                          <td className="border-b border-coffee/10 px-3 py-2.5"></td>
+                        </tr>
+                      </React.Fragment>
                     ))}
-                    <tr className="bg-cream">
-                      <td className="border-b border-coffee/10 px-3 py-2.5 text-right font-black text-coffee" colSpan="4">{group.area} 小計</td>
-                      <td className="border-b border-coffee/10 px-3 py-2.5 text-right font-black text-coffee">NT$ {moneyRange(group.subtotal)}</td>
-                      <td className="border-b border-coffee/10 px-3 py-2.5"></td>
+                    <tr className="bg-wood/40">
+                      <td className="border-b border-coffee/20 px-3 py-3 text-right font-black text-coffee" colSpan="4">{tradeGroup.trade} 小計</td>
+                      <td className="border-b border-coffee/20 px-3 py-3 text-right font-black text-coffee">NT$ {moneyRange(tradeGroup.subtotal)}</td>
+                      <td className="border-b border-coffee/20 px-3 py-3"></td>
                     </tr>
                   </React.Fragment>
                 ))}
@@ -1752,15 +1788,18 @@ function App() {
               </tfoot>
             </table>
             <div className="estimate-detail-mobile md:hidden print:hidden">
-              {estimateGroups.map((group) => (
-                <section key={`mobile-${group.area}`} className="border-b border-coffee/15 last:border-b-0">
-                  <h4 className="bg-wood/25 px-4 py-3 font-black text-coffee">施工區域：{group.area}</h4>
-                  {group.rows.map((row, index) => (
-                    <article key={`mobile-${row.trade}-${row.name}-${index}`} className="border-b border-coffee/10 px-4 py-3 last:border-b-0">
+              {estimateTradeGroups.map((tradeGroup) => (
+                <section key={`mobile-${tradeGroup.trade}`} className="border-b-2 border-coffee/25 last:border-b-0">
+                  <h4 className="bg-wood/55 px-4 py-3 text-base font-black text-coffee">工種：{tradeGroup.trade}</h4>
+                  {tradeGroup.areas.map((areaGroup) => (
+                    <section key={`mobile-${tradeGroup.trade}-${areaGroup.area}`}>
+                      <h5 className="bg-wood/20 px-4 py-2.5 font-black text-coffee">施工區域：{areaGroup.area}</h5>
+                      {areaGroup.rows.map((row, index) => (
+                    <article key={`mobile-${tradeGroup.trade}-${areaGroup.area}-${row.name}-${index}`} className="border-b border-coffee/10 px-4 py-3 last:border-b-0">
                       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
                         <div>
                           <div className="text-xs font-bold text-stone-500">項目</div>
-                          <div className="mt-1 break-words font-bold text-stone-800">{row.trade ? `${row.trade}｜${row.name}` : row.name}</div>
+                          <div className="mt-1 break-words font-bold text-stone-800">{row.name}</div>
                         </div>
                         <div className="text-right">
                           <div className="text-xs font-bold text-stone-500">單項總價</div>
@@ -1778,10 +1817,16 @@ function App() {
                         </div>
                       )}
                     </article>
+                      ))}
+                      <div className="flex items-center justify-between gap-3 bg-cream px-4 py-3 font-black text-coffee">
+                        <span>{areaGroup.area} 小計</span>
+                        <span>NT$ {moneyRange(areaGroup.subtotal)}</span>
+                      </div>
+                    </section>
                   ))}
-                  <div className="flex items-center justify-between gap-3 bg-cream px-4 py-3 font-black text-coffee">
-                    <span>{group.area} 小計</span>
-                    <span>NT$ {moneyRange(group.subtotal)}</span>
+                  <div className="flex items-center justify-between gap-3 bg-wood/40 px-4 py-3 font-black text-coffee">
+                    <span>{tradeGroup.trade} 小計</span>
+                    <span>NT$ {moneyRange(tradeGroup.subtotal)}</span>
                   </div>
                 </section>
               ))}

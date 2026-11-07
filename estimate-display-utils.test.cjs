@@ -140,7 +140,7 @@ test("low cabinet choices are merged while old drafts remain supported", () => {
   assert.deepEqual(pricing.legacyCabinetTypes.filter((item) => ["lowA", "lowB"].includes(item.id)).map((item) => item.id), ["lowA", "lowB"]);
 });
 
-test("customer estimate rows use the requested six columns without a blank trade cell", () => {
+test("customer estimate rows use item text only because trade is a parent heading", () => {
   assert.deepEqual(estimateDetailHeaders, ["項目", "數量", "單位", "單價", "單項總價", "備註"]);
   assert.deepEqual(toEstimateDetailCells({
     trade: "櫃體工程",
@@ -151,10 +151,10 @@ test("customer estimate rows use the requested six columns without a blank trade
     unitPrice: "NT$ 7,500元",
     note: "現場確認",
     subtotal: { low: 29703, high: 29703 }
-  }, "NT$ 29,703元"), ["櫃體工程｜鞋櫃", "3.96", "尺", "NT$ 7,500元", "NT$ 29,703元", "現場確認"]);
+  }, "NT$ 29,703元"), ["鞋櫃", "3.96", "尺", "NT$ 7,500元", "NT$ 29,703元", "現場確認"]);
 });
 
-test("grouped detail rows begin directly with the item", () => {
+test("grouped detail rows do not repeat the parent trade name", () => {
   const row = {
     trade: "櫃體工程",
     area: "玄關",
@@ -164,7 +164,7 @@ test("grouped detail rows begin directly with the item", () => {
     note: "現場確認"
   };
 
-  assert.deepEqual(toEstimateDetailCells({ ...row, unitPrice: "NT$ 7,500元" }, "NT$ 29,703元"), ["櫃體工程｜鞋櫃", "3.96", "尺", "NT$ 7,500元", "NT$ 29,703元", "現場確認"]);
+  assert.deepEqual(toEstimateDetailCells({ ...row, unitPrice: "NT$ 7,500元" }, "NT$ 29,703元"), ["鞋櫃", "3.96", "尺", "NT$ 7,500元", "NT$ 29,703元", "現場確認"]);
 });
 
 test("item and note columns are equally widest in the compact six-column layout", () => {
@@ -232,10 +232,10 @@ test("published app includes one-click PDF assets and control", () => {
   const worker = fs.readFileSync("./sw.js", "utf8");
   const appSource = fs.readFileSync("./app.jsx", "utf8");
 
-  assert.match(index, /pdf-export-utils\.js\?v=4/);
+  assert.match(index, /pdf-export-utils\.js\?v=5/);
   assert.match(index, /html2canvas\.min\.js/);
   assert.match(index, /jspdf\.umd\.min\.js/);
-  assert.match(worker, /pdf-export-utils\.js\?v=4/);
+  assert.match(worker, /pdf-export-utils\.js\?v=5/);
   assert.match(worker, /html2canvas\.min\.js/);
   assert.match(worker, /jspdf\.umd\.min\.js/);
   assert.match(appSource, /下載 PDF/);

@@ -99,8 +99,7 @@
   };
 
   const toEstimateDetailCells = (row, subtotalText) => {
-    const itemName = row.trade ? `${row.trade}｜${row.name}` : row.name;
-    return [itemName, row.qty, row.unit, row.unitPrice, subtotalText, String(row.note || "").trim()];
+    return [row.name, row.qty, row.unit, row.unitPrice, subtotalText, String(row.note || "").trim()];
   };
 
   return {
