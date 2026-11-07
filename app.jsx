@@ -2,7 +2,7 @@ const pricing = JSON.parse(document.querySelector("#pricing-data").textContent);
 
 const { cleanNote, noteLine } = window.KaiwoNotes;
 const { editableNumber, editableText, editableUnit } = window.KaiwoEditableText;
-const { areaChoices, moveItemToArea } = window.KaiwoAreas;
+const { areaChoices, moveItemToArea, migrateProtectionRows, updateProtectionRow, removeProtectionRow } = window.KaiwoAreas;
 const {
   buildPaymentLines,
   buildEstimateTitles,
@@ -267,15 +267,7 @@ function App() {
   const [floorUnit, setFloorUnit] = useDraftState("floorUnit", "坪");
   const [floorActualUnitPrice, setFloorActualUnitPrice] = useDraftState("floorActualUnitPrice", "");
   const floorNeeded = fixedNumber(floorActualUnitPrice) !== null && Number(floorPing) > 0;
-  const [protectionArea, setProtectionArea] = useDraftState("protectionArea", "全室");
-  const [protectionText, setProtectionText] = useDraftState("protectionText", "保護工程");
-  const [protectionNote, setProtectionNote] = useDraftState("protectionNote", "");
-  const [protectionQty, setProtectionQty] = useDraftState("protectionQty", 1);
-  const [protectionUnit, setProtectionUnit] = useDraftState("protectionUnit", "式");
-  const [protectionLow, setProtectionLow] = useDraftState("protectionLow", 8000);
-  const [protectionHigh, setProtectionHigh] = useDraftState("protectionHigh", 15000);
-  const [protectionFixed, setProtectionFixed] = useDraftState("protectionFixed", "");
-  const [protectionActualUnitPrice, setProtectionActualUnitPrice] = useDraftState("protectionActualUnitPrice", "");
+  const [protectionRows, setProtectionRows] = useDraftState("protectionRows", migrateProtectionRows(savedDraft, () => crypto.randomUUID()));
   const [cleanupArea, setCleanupArea] = useDraftState("cleanupArea", "全室");
   const [cleanupText, setCleanupText] = useDraftState("cleanupText", "清運廢棄物工程");
   const [cleanupNote, setCleanupNote] = useDraftState("cleanupNote", "");
@@ -392,7 +384,11 @@ function App() {
   const paintingExtraTotal = paintingExtraTotals.reduce((sum, row) => addPair(sum, row.subtotal), pair());
   const airConditioningTotal = airConditioningTotals.reduce((sum, row) => addPair(sum, row.subtotal), pair());
   const masonryTotal = masonryTotals.reduce((sum, row) => addPair(sum, row.subtotal), pair());
-  const protectionTotal = actualPricedPair(protectionQty, protectionActualUnitPrice);
+  const protectionTotals = protectionRows.map((row) => ({
+    ...row,
+    subtotal: actualPricedPair(row.qty, row.actualUnitPrice)
+  }));
+  const protectionTotal = protectionTotals.reduce((sum, row) => addPair(sum, row.subtotal), pair());
   const cleanupTotal = actualPricedPair(cleanupQty, cleanupActualUnitPrice);
   const plumbingTotal = addPair(plumbingBaseTotal, plumbingExtraTotal);
   const paintingTotal = addPair(paintingBaseTotal, paintingExtraTotal);
@@ -472,6 +468,24 @@ function App() {
     setShowResult(false);
   };
 
+  const updateProtection = (id, patch) => {
+    setProtectionRows((rows) => updateProtectionRow(rows, id, patch));
+    setShowResult(false);
+  };
+
+  const addProtection = () => {
+    setProtectionRows((rows) => [...rows, {
+      id: crypto.randomUUID(),
+      area: "",
+      customText: "保護工程",
+      note: "",
+      qty: 1,
+      unit: "式",
+      actualUnitPrice: ""
+    }]);
+    setShowResult(false);
+  };
+
   const updatePlumbingItem = (id, itemId) => {
     const item = plumbingItemMap[itemId] || pricing.plumbingExtraItems[0];
     updatePlumbingExtra(id, { itemId, low: item.low, high: item.high, fixed: "", customText: itemDisplayName(item), unit: item.unit, actualUnitPrice: "" });
@@ -542,7 +556,7 @@ function App() {
     ...woodTotals.map((row) => cleanNote(row.note) ? `- 木作工程｜${row.area}｜${row.customText}：${cleanNote(row.note)}` : ""),
     floorNeeded && cleanNote(floorNote) ? `- 地板工程｜${floorArea}｜${floorText}：${cleanNote(floorNote)}` : "",
     ...masonryTotals.map((row) => hasAmount(row.subtotal) && cleanNote(row.note) ? `- 土水工程｜${row.area}｜${row.customText}：${cleanNote(row.note)}` : ""),
-    hasAmount(protectionTotal) && cleanNote(protectionNote) ? `- 保護工程｜${protectionArea}｜${protectionText}：${cleanNote(protectionNote)}` : "",
+    ...protectionTotals.map((row) => hasAmount(row.subtotal) && cleanNote(row.note) ? `- 保護工程｜${row.area || "未填區域"}｜${row.customText || "保護工程"}：${cleanNote(row.note)}` : ""),
     hasAmount(cleanupTotal) && cleanNote(cleanupNote) ? `- 清運廢棄物工程｜${cleanupArea}｜${cleanupText}：${cleanNote(cleanupNote)}` : "",
     hasAmount(plumbingBaseTotal) && cleanNote(plumbingBaseNote) ? `- 水電工程｜${plumbingBaseArea}｜${plumbingBaseText}：${cleanNote(plumbingBaseNote)}` : "",
     ...plumbingExtraTotals.map((row) => hasAmount(row.subtotal) && cleanNote(row.note) ? `- 水電工程｜${row.area}｜${row.customText}：${cleanNote(row.note)}` : ""),
@@ -570,7 +584,8 @@ function App() {
       ...(floorNeeded && hasAmount(flooringTotal) ? [`地板工程：NT$ ${moneyRange(flooringTotal)}`] : []),
       ...(hasAmount(masonryTotal) ? [`土水工程：NT$ ${moneyRange(masonryTotal)}`] : []),
       ...masonryTotals.filter((row) => hasAmount(row.subtotal)).map(summaryItemLine),
-      ...(hasAmount(protectionTotal) ? [`保護工程：NT$ ${moneyRange(protectionTotal)}（${protectionText} × ${comparisonSafeMode ? "1式" : `${protectionQty}${protectionUnit} × ${actualUnitPriceText(protectionActualUnitPrice)}`}）`] : []),
+      ...(hasAmount(protectionTotal) ? [`保護工程：NT$ ${moneyRange(protectionTotal)}`] : []),
+      ...protectionTotals.filter((row) => hasAmount(row.subtotal)).map(summaryItemLine),
       ...(hasAmount(cleanupTotal) ? [`清運廢棄物工程：NT$ ${moneyRange(cleanupTotal)}（${cleanupText} × ${comparisonSafeMode ? "1式" : `${cleanupQty}${cleanupUnit} × ${actualUnitPriceText(cleanupActualUnitPrice)}`}）`] : []),
       ...(hasAmount(plumbingTotal) ? [`水電工程：NT$ ${moneyRange(plumbingTotal)}（基礎 ${moneyRange(plumbingBaseTotal)}，加價 ${moneyRange(plumbingExtraTotal)}）`] : []),
       ...plumbingExtraTotals.filter((row) => hasAmount(row.subtotal)).map(summaryItemLine),
@@ -590,7 +605,7 @@ function App() {
       `免責說明：此為線上初估金額，實際報價仍需依現場丈量、材質選擇、施工條件與圖面內容為準。`
     ];
     return lines.join("\n");
-  }, [completionDate, paymentStages, summaryTitle, projectLocationText, customTrades, ping, condition, selectedAreas, cabinetTotal, woodTotal, floorNeeded, flooringTotal, masonryTotal, masonryTotals, protectionTotal, protectionText, protectionQty, protectionUnit, protectionActualUnitPrice, cleanupTotal, cleanupText, cleanupQty, cleanupUnit, cleanupActualUnitPrice, plumbingBaseTotal, plumbingExtraTotal, plumbingTotal, plumbingExtraTotals, paintingBaseTotal, paintingExtraTotal, paintingTotal, paintingExtraTotals, airConditioningTotal, airConditioningTotals, estimateNoteText, comparisonSafeMode, grandTotal, managementRate, managementPercent, managementTotal, invoiceNeeded, invoiceTotal, finalTotal]);
+  }, [completionDate, paymentStages, summaryTitle, projectLocationText, customTrades, ping, condition, selectedAreas, cabinetTotal, woodTotal, floorNeeded, flooringTotal, masonryTotal, masonryTotals, protectionTotal, protectionRows, cleanupTotal, cleanupText, cleanupQty, cleanupUnit, cleanupActualUnitPrice, plumbingBaseTotal, plumbingExtraTotal, plumbingTotal, plumbingExtraTotals, paintingBaseTotal, paintingExtraTotal, paintingTotal, paintingExtraTotals, airConditioningTotal, airConditioningTotals, estimateNoteText, comparisonSafeMode, grandTotal, managementRate, managementPercent, managementTotal, invoiceNeeded, invoiceTotal, finalTotal]);
 
   const rawEstimateRows = [
     ...customTrades.flatMap((trade) => trade.rows.map((row) => ({trade: trade.name.trim() || "自訂工程", area: row.area || "全室", name: row.name.trim() || "未命名項目", note: row.note || "", qty: row.qty, unit: row.unit, unitPrice: actualUnitPriceText(row.price), subtotal: actualPricedPair(row.qty, row.price)}))),
@@ -634,16 +649,16 @@ function App() {
       unitPrice: actualUnitPriceText(row.actualUnitPrice),
       subtotal: row.subtotal
     })),
-    ...(isPricedItem(protectionQty, protectionActualUnitPrice) ? [{
+    ...protectionTotals.filter((row) => isPricedItem(row.qty, row.actualUnitPrice)).map((row) => ({
       trade: "保護工程",
-      area: protectionArea,
-      name: protectionText,
-      note: protectionNote,
-      qty: protectionQty,
-      unit: protectionUnit,
-      unitPrice: actualUnitPriceText(protectionActualUnitPrice),
-      subtotal: protectionTotal
-    }] : []),
+      area: row.area || "未填區域",
+      name: row.customText || "保護工程",
+      note: row.note || "",
+      qty: row.qty,
+      unit: row.unit,
+      unitPrice: actualUnitPriceText(row.actualUnitPrice),
+      subtotal: row.subtotal
+    })),
     ...(isPricedItem(cleanupQty, cleanupActualUnitPrice) ? [{
       trade: "清運廢棄物工程",
       area: cleanupArea,
@@ -1430,25 +1445,33 @@ function App() {
 
           <Card title="保護工程" defaultOpen={false}>
             <div className="grid gap-4">
-              <div className="rounded-lg border border-coffee/10 bg-white p-4">
-                <div className="grid gap-3 md:grid-cols-[130px_1fr_100px_100px_140px] md:items-end">
-                  <AreaSelect value={protectionArea} selectedAreas={selectedAreas} allAreas={allAreas} includeWhole allowCustom onChange={(area) => { setProtectionArea(area); setShowResult(false); }} />
-                  <Field label="項目文字">
-                    <input className={fullTextInputClass} value={protectionText} onChange={(e) => { setProtectionText(e.target.value); setShowResult(false); }} />
-                  </Field>
-                  <Field label="數量">
-                    <input className={numberInputClass} type="number" min="0" value={protectionQty} onChange={(e) => { setProtectionQty(editableNumber(e.target.value)); setShowResult(false); }} />
-                  </Field>
-                  <Field label="單位">
-                    <input className="rounded-lg border border-coffee/20 px-3 py-2" value={protectionUnit} onChange={(e) => { setProtectionUnit(e.target.value); setShowResult(false); }} />
-                  </Field>
-                  <Field label="實際單價">
-                    <input className={numberInputClass} type="number" min="0" value={protectionActualUnitPrice} placeholder="自行填入" onChange={(e) => { setProtectionActualUnitPrice(e.target.value); setShowResult(false); }} />
-                  </Field>
-                </div>
-                <div className="mt-3 rounded-lg bg-cream px-3 py-3 text-sm text-stone-700">小計：<b>NT$ {moneyRange(protectionTotal)}</b></div>
-                <NoteField value={protectionNote} onChange={(note) => { setProtectionNote(note); setShowResult(false); }} />
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <h3 className="text-lg font-black text-coffee">保護區域</h3>
+                <button className="rounded-lg border border-coffee/20 bg-wood/25 px-4 py-2 text-sm font-black text-coffee" type="button" onClick={addProtection}>新增保護區域</button>
               </div>
+              {protectionTotals.map((row) => (
+                <div key={row.id} className="rounded-lg border border-coffee/10 bg-white p-4">
+                  <div className="grid gap-3 md:grid-cols-[130px_1fr_100px_100px_140px_auto] md:items-end">
+                    <AreaSelect value={row.area} selectedAreas={selectedAreas} allAreas={allAreas} includeWhole allowCustom onChange={(area) => updateProtection(row.id, { area })} />
+                    <Field label="項目文字">
+                      <input className={fullTextInputClass} value={row.customText} onChange={(e) => updateProtection(row.id, { customText: e.target.value })} />
+                    </Field>
+                    <Field label="數量">
+                      <input className={numberInputClass} type="number" min="0" value={row.qty} onChange={(e) => updateProtection(row.id, { qty: editableNumber(e.target.value) })} />
+                    </Field>
+                    <Field label="單位">
+                      <input className="rounded-lg border border-coffee/20 px-3 py-2" value={row.unit} onChange={(e) => updateProtection(row.id, { unit: e.target.value })} />
+                    </Field>
+                    <Field label="實際單價">
+                      <input className={numberInputClass} type="number" min="0" value={row.actualUnitPrice} placeholder="自行填入" onChange={(e) => updateProtection(row.id, { actualUnitPrice: e.target.value })} />
+                    </Field>
+                    <button className="rounded-lg border border-red-200 px-3 py-2 text-sm font-bold text-red-700" type="button" onClick={() => { setProtectionRows((rows) => removeProtectionRow(rows, row.id)); setShowResult(false); }}>刪除</button>
+                  </div>
+                  <div className="mt-3 rounded-lg bg-cream px-3 py-3 text-sm text-stone-700">小計：<b>NT$ {moneyRange(row.subtotal)}</b></div>
+                  <NoteField value={row.note} onChange={(note) => updateProtection(row.id, { note })} />
+                </div>
+              ))}
+              {!protectionTotals.length && <div className="rounded-lg border border-dashed border-coffee/20 bg-white p-4 text-sm text-stone-600">尚未新增保護區域。</div>}
             </div>
           </Card>
 

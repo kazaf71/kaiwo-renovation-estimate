@@ -12,5 +12,26 @@
     return rows.map((row) => row.id === id ? { ...row, area } : row);
   }
 
-  return { areaChoices, moveItemToArea };
+  function migrateProtectionRows(draft = {}, makeId = () => "protection-row") {
+    if (Array.isArray(draft.protectionRows)) return draft.protectionRows;
+    return [{
+      id: makeId(),
+      area: draft.protectionArea ?? "全室",
+      customText: draft.protectionText ?? "保護工程",
+      note: draft.protectionNote ?? "",
+      qty: draft.protectionQty ?? 1,
+      unit: draft.protectionUnit ?? "式",
+      actualUnitPrice: draft.protectionActualUnitPrice ?? ""
+    }];
+  }
+
+  function updateProtectionRow(rows, id, patch) {
+    return rows.map((row) => row.id === id ? { ...row, ...patch } : row);
+  }
+
+  function removeProtectionRow(rows, id) {
+    return rows.filter((row) => row.id !== id);
+  }
+
+  return { areaChoices, moveItemToArea, migrateProtectionRows, updateProtectionRow, removeProtectionRow };
 });

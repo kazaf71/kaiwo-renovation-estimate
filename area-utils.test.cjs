@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { areaChoices, moveItemToArea } = require("./area-utils.js");
+const { areaChoices, moveItemToArea, migrateProtectionRows, updateProtectionRow, removeProtectionRow } = require("./area-utils.js");
 
 test("area choices keep the item's current area and offer selected destinations", () => {
   assert.deepEqual(
@@ -21,4 +21,38 @@ test("moving an item changes only its area and preserves entered work", () => {
   assert.deepEqual(moveItemToArea(rows, "wood-1", "次臥室1"), [
     { id: "wood-1", area: "次臥室1", customText: "平釘天花板", qty: 6, unit: "坪", actualUnitPrice: "3200", note: "保留" }
   ]);
+});
+
+test("legacy protection fields migrate into the first editable protection row", () => {
+  const rows = migrateProtectionRows({
+    protectionArea: "公共走道",
+    protectionText: "公共區域保護",
+    protectionNote: "電梯至門口",
+    protectionQty: 2,
+    protectionUnit: "式",
+    protectionActualUnitPrice: "3500"
+  }, () => "protection-1");
+
+  assert.deepEqual(rows, [{
+    id: "protection-1",
+    area: "公共走道",
+    customText: "公共區域保護",
+    note: "電梯至門口",
+    qty: 2,
+    unit: "式",
+    actualUnitPrice: "3500"
+  }]);
+});
+
+test("protection rows can be edited and removed independently", () => {
+  const rows = [
+    { id: "public", area: "公共區域", customText: "公區保護", qty: 1 },
+    { id: "private", area: "私人區域", customText: "室內保護", qty: 1 }
+  ];
+
+  assert.deepEqual(updateProtectionRow(rows, "private", { qty: 2 }), [
+    rows[0],
+    { ...rows[1], qty: 2 }
+  ]);
+  assert.deepEqual(removeProtectionRow(rows, "public"), [rows[1]]);
 });
