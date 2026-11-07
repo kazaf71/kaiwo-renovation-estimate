@@ -1581,8 +1581,8 @@ function App() {
 
               <div className="grid gap-3">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <h3 className="text-lg font-black text-coffee">油漆加價項目</h3>
-                  <button className="rounded-lg border border-coffee/20 bg-wood/25 px-4 py-2 text-sm font-black text-coffee" type="button" onClick={addPaintingExtra}>新增油漆加價</button>
+                  <h3 className="text-lg font-black text-coffee">油漆項目</h3>
+                  <button className="rounded-lg border border-coffee/20 bg-wood/25 px-4 py-2 text-sm font-black text-coffee" type="button" onClick={addPaintingExtra}>新增油漆項目</button>
                 </div>
 
                 {paintingExtraTotals.map((row) => (
@@ -1604,12 +1604,14 @@ function App() {
                         <input className={numberInputClass} value={row.unit} onChange={(e) => updatePaintingExtra(row.id, { unit: e.target.value })} />
                       </Field>
                       <Field label="實際單價">
-                        <input className={numberInputClass} type="number" min="0" value={row.actualUnitPrice} placeholder="自行填入" onChange={(e) => updatePaintingExtra(row.id, { actualUnitPrice: e.target.value })} />
+                        <div className="grid gap-1">
+                          <input className={numberInputClass} type="number" min="0" value={row.actualUnitPrice} placeholder="自行填入" onChange={(e) => updatePaintingExtra(row.id, { actualUnitPrice: e.target.value })} />
+                          <small className="text-xs leading-5 text-stone-500">參考價：{referenceText(row.item)}</small>
+                        </div>
                       </Field>
                       <button className="rounded-lg border border-red-200 px-3 py-2 text-sm font-bold text-red-700 disabled:opacity-50" type="button" onClick={() => setPaintingExtras((rows) => rows.filter((item) => item.id !== row.id))}>刪除</button>
                     </div>
                     <div className="mt-3 rounded-lg bg-cream px-3 py-3 text-sm text-stone-700">
-                      <div>參考依據：<b>{referenceText(row.item)}</b></div>
                       小計：<b>NT$ {moneyRange(row.subtotal)}</b>
                     </div>
                     <NoteField value={row.note} onChange={(note) => updatePaintingExtra(row.id, { note })} />
