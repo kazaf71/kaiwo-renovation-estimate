@@ -156,12 +156,23 @@ function Field({ label, children }) {
   );
 }
 
-function AreaSelect({ value, onChange, selectedAreas, allAreas, includeWhole = false }) {
+function AreaSelect({ value, onChange, selectedAreas, allAreas, includeWhole = false, allowCustom = false }) {
+  const suggestions = areaChoices(value, selectedAreas, allAreas, includeWhole);
+  const suggestionId = React.useId();
   return (
     <Field label="施工區域">
-      <select aria-label="施工區域" className="rounded-lg border border-coffee/20 bg-white px-3 py-2" value={value} onChange={(event) => onChange(event.target.value)}>
-        {areaChoices(value, selectedAreas, allAreas, includeWhole).map((area) => <option key={area}>{area}</option>)}
-      </select>
+      {allowCustom ? (
+        <>
+          <input aria-label="施工區域" className="rounded-lg border border-coffee/20 bg-white px-3 py-2" list={suggestionId} value={value} placeholder="選擇或輸入區域" onChange={(event) => onChange(event.target.value)} />
+          <datalist id={suggestionId}>
+            {suggestions.map((area) => <option key={area} value={area} />)}
+          </datalist>
+        </>
+      ) : (
+        <select aria-label="施工區域" className="rounded-lg border border-coffee/20 bg-white px-3 py-2" value={value} onChange={(event) => onChange(event.target.value)}>
+          {suggestions.map((area) => <option key={area}>{area}</option>)}
+        </select>
+      )}
     </Field>
   );
 }
@@ -1421,7 +1432,7 @@ function App() {
             <div className="grid gap-4">
               <div className="rounded-lg border border-coffee/10 bg-white p-4">
                 <div className="grid gap-3 md:grid-cols-[130px_1fr_100px_100px_140px] md:items-end">
-                  <AreaSelect value={protectionArea} selectedAreas={selectedAreas} allAreas={allAreas} includeWhole onChange={(area) => { setProtectionArea(area); setShowResult(false); }} />
+                  <AreaSelect value={protectionArea} selectedAreas={selectedAreas} allAreas={allAreas} includeWhole allowCustom onChange={(area) => { setProtectionArea(area); setShowResult(false); }} />
                   <Field label="項目文字">
                     <input className={fullTextInputClass} value={protectionText} onChange={(e) => { setProtectionText(e.target.value); setShowResult(false); }} />
                   </Field>
