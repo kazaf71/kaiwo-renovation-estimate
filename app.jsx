@@ -249,8 +249,6 @@ function App() {
   const customTotal = customTotals.reduce((sum, trade) => addPair(sum, trade.subtotal), pair());
   const [projectName, setProjectName] = useDraftState("projectName", "");
   const [projectLocation, setProjectLocation] = useDraftState("projectLocation", "");
-  const [ping, setPing] = useDraftState("ping", 28);
-  const [condition, setCondition] = useDraftState("condition", "新成屋");
   const { summaryTitle, formalTitle } = buildEstimateTitles(projectName, pricing.brand.name);
   const projectLocationText = formatProjectLocation(projectLocation);
   const [selectedAreas, setSelectedAreas] = useDraftState("selectedAreas", []);
@@ -425,11 +423,6 @@ function App() {
     setShowResult(false);
   };
 
-  const updateCondition = (value) => {
-    setCondition(value);
-    setShowResult(false);
-  };
-
   const updatePlumbingExtra = (id, patch) => {
     setPlumbingExtras((rows) => rows.map((row) => (row.id === id ? { ...row, ...patch } : row)));
     setShowResult(false);
@@ -556,7 +549,6 @@ function App() {
       `工程地點：${projectLocationText}`,
       `LINE：${pricing.brand.line}｜電話：${pricing.brand.phone}`,
       ``,
-      `基本條件：室內 ${ping} 坪，屋況：${condition}`,
       `估價區域：${selectedAreas.join("、") || "未選擇"}`,
       ``,
       ...(hasAmount(cabinetTotal) ? [`櫃體工程：NT$ ${moneyRange(cabinetTotal)}`] : []),
@@ -585,7 +577,7 @@ function App() {
       `免責說明：此為線上初估金額，實際報價仍需依現場丈量、材質選擇、施工條件與圖面內容為準。`
     ];
     return lines.join("\n");
-  }, [completionDate, paymentStages, summaryTitle, projectLocationText, customTrades, ping, condition, selectedAreas, cabinetTotal, woodTotal, floorNeeded, flooringTotal, masonryTotal, masonryTotals, protectionTotal, protectionRows, cleanupTotal, cleanupText, cleanupQty, cleanupUnit, cleanupActualUnitPrice, plumbingExtraTotal, plumbingTotal, plumbingExtraTotals, paintingExtraTotal, paintingTotal, paintingExtraTotals, airConditioningTotal, airConditioningTotals, estimateNoteText, comparisonSafeMode, grandTotal, managementRate, managementPercent, managementTotal, invoiceNeeded, invoiceTotal, finalTotal]);
+  }, [completionDate, paymentStages, summaryTitle, projectLocationText, customTrades, selectedAreas, cabinetTotal, woodTotal, floorNeeded, flooringTotal, masonryTotal, masonryTotals, protectionTotal, protectionRows, cleanupTotal, cleanupText, cleanupQty, cleanupUnit, cleanupActualUnitPrice, plumbingExtraTotal, plumbingTotal, plumbingExtraTotals, paintingExtraTotal, paintingTotal, paintingExtraTotals, airConditioningTotal, airConditioningTotals, estimateNoteText, comparisonSafeMode, grandTotal, managementRate, managementPercent, managementTotal, invoiceNeeded, invoiceTotal, finalTotal]);
 
   const rawEstimateRows = [
     ...customTrades.flatMap((trade) => trade.rows.map((row) => ({trade: trade.name.trim() || "自訂工程", area: row.area || "全室", name: row.name.trim() || "未命名項目", note: row.note || "", qty: row.qty, unit: row.unit, unitPrice: actualUnitPriceText(row.price), subtotal: actualPricedPair(row.qty, row.price)}))),
@@ -748,9 +740,7 @@ function App() {
       ]),
       odsCellsRow([
         { value: "工程項目", style: "metaLabel" },
-        { value: "室內裝修工程", span: 2, style: "meta" },
-        { value: "屋況", style: "metaLabel" },
-        { value: condition, span: 2, style: "meta" }
+        { value: "室內裝修工程", span: 5, style: "meta" }
       ]),
       odsCellsRow([
         { value: "案件名稱", style: "metaLabel" },
@@ -902,7 +892,7 @@ function App() {
     const rows = [
       `<tr>${htmlCell(formalTitle, "th", 'colspan="6" class="title"')}</tr>`,
       `<tr>${["工程地點", projectLocationText, "", "日期", today, ""].map((value) => htmlCell(value)).join("")}</tr>`,
-      `<tr>${["工程項目", "室內裝修工程", "", "屋況", condition, ""].map((value) => htmlCell(value)).join("")}</tr>`,
+      `<tr>${htmlCell("工程項目")}${htmlCell("室內裝修工程", "td", 'colspan="5"')}</tr>`,
       `<tr>${["案件名稱", projectName.trim() || "未填寫", "", "聯絡方式", `LINE ${pricing.brand.line}｜${pricing.brand.phone}`, ""].map((value) => htmlCell(value)).join("")}</tr>`,
       `<tr>${estimateDetailHeaders.map((value) => htmlCell(value, "th")).join("")}</tr>`
     ];
@@ -1009,7 +999,7 @@ function App() {
           </header>
           <table class="pdf-meta"><tbody>
             <tr><th>工程地點</th><td>${xmlEscape(projectLocationText)}</td><th>日期</th><td>${xmlEscape(today)}</td></tr>
-            <tr><th>工程項目</th><td>室內裝修工程</td><th>屋況</th><td>${xmlEscape(condition)}</td></tr>
+            <tr><th>工程項目</th><td colspan="3">室內裝修工程</td></tr>
             <tr><th>案件名稱</th><td>${xmlEscape(projectName.trim() || "未填寫")}</td><th>聯絡方式</th><td>LINE ${xmlEscape(pricing.brand.line)}｜${xmlEscape(pricing.brand.phone)}</td></tr>
           </tbody></table>
         ` : `
@@ -1154,15 +1144,6 @@ function App() {
                   <input className={fullTextInputClass} value={projectLocation} maxLength="120" placeholder="例如：台北市中山區中山路 100 號" onChange={(e) => { setProjectLocation(e.target.value); setShowResult(false); }} />
                 </Field>
               </div>
-              <Field label="室內坪數">
-                <input className={numberInputPanelClass} type="number" min="1" value={ping} onChange={(e) => { setPing(editableNumber(e.target.value)); setShowResult(false); }} />
-              </Field>
-              <Field label="屋況">
-                <select className="rounded-lg border border-coffee/20 bg-white px-3 py-3" value={condition} onChange={(e) => updateCondition(e.target.value)}>
-                  <option>新成屋</option>
-                  <option>中古屋</option>
-                </select>
-              </Field>
             </div>
           </Card>
 
