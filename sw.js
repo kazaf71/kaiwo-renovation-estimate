@@ -1,4 +1,4 @@
-const CACHE_NAME = "kaiwo-estimate-v44";
+const CACHE_NAME = "kaiwo-estimate-v45";
 const APP_SHELL = [
   "/",
   "/index.html",
@@ -11,7 +11,7 @@ const APP_SHELL = [
   "/flooring-rows-utils.js?v=1",
   "/area-utils.js?v=2",
   "/estimate-display-utils.js?v=15",
-  "/pdf-export-utils.js?v=5",
+  "/pdf-export-utils.js?v=6",
   "/manifest.webmanifest",
   "/icons/app-icon.svg",
   "/vendor/jszip.min.js",

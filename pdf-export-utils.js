@@ -104,6 +104,13 @@
     renderedPdfRows(lastPageGroups) + summaryRows > maxRenderedRows
   );
 
+  const pdfContinuationContextRows = (unitRows, activeTradeRow, activeAreaRow) => {
+    if (unitRows.some((row) => row.matches(".trade"))) return [];
+    const rows = activeTradeRow ? [activeTradeRow] : [];
+    if (activeAreaRow && !unitRows.some((row) => row.matches(".area"))) rows.push(activeAreaRow);
+    return rows;
+  };
+
   const paginateRenderedPdf = (source) => {
     const host = source.parentNode;
     const pages = [];
@@ -141,6 +148,8 @@
       closing.remove();
     }
     let content, currentTable;
+    let activeTradeRow = null;
+    let activeAreaRow = null;
     const newPage = () => {
       const page = source.cloneNode(false);
       page.style.cssText = source.style.cssText + ";height:1123px;min-height:1123px;position:relative;display:block;";
@@ -167,7 +176,7 @@
     };
     newPage();
     for (const unit of units) {
-      const append = () => {
+      const append = (includeContinuationContext = false) => {
         if (!unit.table) {
           currentTable = null;
           const node = unit.node.cloneNode(true);
@@ -179,7 +188,10 @@
           currentTable.tBodies[0].replaceChildren();
           content.append(currentTable);
         }
-        const rows = unit.rows.map((row) => row.cloneNode(true));
+        const sourceRows = includeContinuationContext
+          ? [...pdfContinuationContextRows(unit.rows, activeTradeRow, activeAreaRow), ...unit.rows]
+          : unit.rows;
+        const rows = sourceRows.map((row) => row.cloneNode(true));
         currentTable.tBodies[0].append(...rows);
         return rows;
       };
@@ -188,8 +200,16 @@
         inserted.forEach((node) => node.remove());
         if (currentTable && !currentTable.tBodies[0].rows.length) currentTable.remove();
         newPage();
-        inserted = append();
+        inserted = append(Boolean(unit.table));
         if (content.getBoundingClientRect().height > 1020) throw new Error("單一項目內容超過一頁，請將過長的備註分成多個項目。");
+      }
+      if (unit.table) {
+        unit.rows.forEach((row) => {
+          if (row.matches(".trade")) {
+            activeTradeRow = row;
+            activeAreaRow = null;
+          } else if (row.matches(".area")) activeAreaRow = row;
+        });
       }
     }
     source.remove();
@@ -207,6 +227,7 @@
     buildPdfFileName,
     paginateEstimateGroups,
     paginateEstimateGroupsForPdf,
+    pdfContinuationContextRows,
     renderedPdfRows,
     safeFilePart,
     shouldAppendPdfSummaryPage

@@ -201,6 +201,7 @@ test("PDF export provides a safe project-based filename and grouped pagination",
     buildPdfFileName,
     paginateEstimateGroups,
     paginateEstimateGroupsForPdf,
+    pdfContinuationContextRows,
     shouldAppendPdfSummaryPage
   } = require("./pdf-export-utils.js");
 
@@ -225,6 +226,16 @@ test("PDF export provides a safe project-based filename and grouped pagination",
   ], 24);
   assert.equal(singleTradePages.length, 1);
   assert.equal(shouldAppendPdfSummaryPage(singleTradePages.at(-1), 24, 10), false, "summary should use the remaining first-page space");
+
+  const fakeRow = (className, text) => ({ className, text, matches: (selector) => selector === `.${className}` });
+  const activeTrade = fakeRow("trade", "工種：木作工程");
+  const activeArea = fakeRow("area", "施工區域：客廳");
+  const item = fakeRow("item", "項目 9");
+  const nextArea = fakeRow("area", "施工區域：主臥室");
+  const nextTrade = fakeRow("trade", "工種：油漆工程");
+  assert.deepEqual(pdfContinuationContextRows([item], activeTrade, activeArea), [activeTrade, activeArea], "continued items must repeat their trade and area");
+  assert.deepEqual(pdfContinuationContextRows([nextArea, item], activeTrade, activeArea), [activeTrade], "a new area must repeat only its trade");
+  assert.deepEqual(pdfContinuationContextRows([nextTrade], activeTrade, activeArea), [], "a new trade must not repeat the previous hierarchy");
 });
 
 test("published app includes one-click PDF assets and control", () => {
@@ -232,10 +243,10 @@ test("published app includes one-click PDF assets and control", () => {
   const worker = fs.readFileSync("./sw.js", "utf8");
   const appSource = fs.readFileSync("./app.jsx", "utf8");
 
-  assert.match(index, /pdf-export-utils\.js\?v=5/);
+  assert.match(index, /pdf-export-utils\.js\?v=6/);
   assert.match(index, /html2canvas\.min\.js/);
   assert.match(index, /jspdf\.umd\.min\.js/);
-  assert.match(worker, /pdf-export-utils\.js\?v=5/);
+  assert.match(worker, /pdf-export-utils\.js\?v=6/);
   assert.match(worker, /html2canvas\.min\.js/);
   assert.match(worker, /jspdf\.umd\.min\.js/);
   assert.match(appSource, /下載 PDF/);
