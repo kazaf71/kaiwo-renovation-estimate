@@ -3,6 +3,7 @@ const pricing = JSON.parse(document.querySelector("#pricing-data").textContent);
 const { cleanNote, noteLine } = window.KaiwoNotes;
 const { editableNumber, editableText, editableUnit } = window.KaiwoEditableText;
 const { unitChoices } = window.KaiwoUnits;
+const { isItemEnabled, enabledRows, enabledSubtotal } = window.KaiwoItemEnabled;
 const { migrateFloorRows, updateFloorRow, removeFloorRow } = window.KaiwoFlooringRows;
 const { areaChoices, moveItemToArea, migrateProtectionRows, updateProtectionRow, removeProtectionRow } = window.KaiwoAreas;
 const {
@@ -246,7 +247,7 @@ function App() {
     setCustomTrades((trades) => trades.map((trade) => trade.id === id ? {...trade, ...patch} : trade));
     setShowResult(false);
   };
-  const customTotals = customTrades.map((trade) => ({...trade, subtotal: trade.rows.reduce((sum, row) => addPair(sum, actualPricedPair(row.qty, row.price)), pair())}));
+  const customTotals = customTrades.map((trade) => ({...trade, subtotal: trade.rows.reduce((sum, row) => addPair(sum, enabledSubtotal(row, actualPricedPair(row.qty, row.price), pair())), pair())}));
   const customTotal = customTotals.reduce((sum, trade) => addPair(sum, trade.subtotal), pair());
   const [projectName, setProjectName] = useDraftState("projectName", "");
   const [projectLocation, setProjectLocation] = useDraftState("projectLocation", "");
@@ -278,6 +279,7 @@ function App() {
   const [cleanupHigh, setCleanupHigh] = useDraftState("cleanupHigh", 25000);
   const [cleanupFixed, setCleanupFixed] = useDraftState("cleanupFixed", "");
   const [cleanupActualUnitPrice, setCleanupActualUnitPrice] = useDraftState("cleanupActualUnitPrice", "");
+  const [cleanupEnabled, setCleanupEnabled] = useDraftState("cleanupEnabled", true);
   const [invoiceNeeded, setInvoiceNeeded] = useDraftState("invoiceNeeded", false);
   const finalTotalLabel = invoiceNeeded ? "含稅總額" : "未稅總額";
   const [comparisonSafeMode, setComparisonSafeMode] = useDraftState("comparisonSafeMode", false);
@@ -318,7 +320,7 @@ function App() {
       unitLow: Number(row.low || 0),
       unitHigh: Number(row.high || 0),
       widthFeet,
-      subtotal: actualPricedPair(widthFeet * Number(row.qty || 0), row.actualUnitPrice)
+      subtotal: enabledSubtotal(row, actualPricedPair(widthFeet * Number(row.qty || 0), row.actualUnitPrice), pair())
     };
   });
 
@@ -331,7 +333,7 @@ function App() {
       item,
       customText: rowText(row, item),
       unit: editableUnit(row, item.unit),
-      subtotal: actualPricedPair(row.qty, row.actualUnitPrice)
+      subtotal: enabledSubtotal(row, actualPricedPair(row.qty, row.actualUnitPrice), pair())
     };
   });
 
@@ -339,7 +341,7 @@ function App() {
   const woodTotal = woodTotals.reduce((sum, row) => addPair(sum, row.subtotal), pair());
   const flooringTotals = floorRows.map((row) => ({
     ...row,
-    subtotal: actualPricedPair(row.qty, row.actualUnitPrice)
+    subtotal: enabledSubtotal(row, actualPricedPair(row.qty, row.actualUnitPrice), pair())
   }));
   const flooringTotal = flooringTotals.reduce((sum, row) => addPair(sum, row.subtotal), pair());
   const plumbingExtraTotals = plumbingExtras.map((row) => ({
@@ -347,28 +349,28 @@ function App() {
     item: plumbingItemMap[row.itemId] || pricing.plumbingExtraItems[0],
     customText: rowText(row, plumbingItemMap[row.itemId] || pricing.plumbingExtraItems[0]),
     unit: editableUnit(row, (plumbingItemMap[row.itemId] || pricing.plumbingExtraItems[0]).unit),
-    subtotal: actualPricedPair(row.qty, row.actualUnitPrice)
+    subtotal: enabledSubtotal(row, actualPricedPair(row.qty, row.actualUnitPrice), pair())
   }));
   const paintingExtraTotals = paintingExtras.map((row) => ({
     ...row,
     item: paintingItemMap[row.itemId] || pricing.paintingExtraItems[0],
     customText: rowText(row, paintingItemMap[row.itemId] || pricing.paintingExtraItems[0]),
     unit: editableUnit(row, (paintingItemMap[row.itemId] || pricing.paintingExtraItems[0]).unit),
-    subtotal: actualPricedPair(row.qty, row.actualUnitPrice)
+    subtotal: enabledSubtotal(row, actualPricedPair(row.qty, row.actualUnitPrice), pair())
   }));
   const airConditioningTotals = airConditioningRows.map((row) => ({
     ...row,
     item: airConditioningItemMap[row.itemId] || pricing.airConditioningItems[0],
     customText: rowText(row, airConditioningItemMap[row.itemId] || pricing.airConditioningItems[0]),
     unit: editableUnit(row, (airConditioningItemMap[row.itemId] || pricing.airConditioningItems[0]).unit),
-    subtotal: actualPricedPair(row.qty, row.actualUnitPrice)
+    subtotal: enabledSubtotal(row, actualPricedPair(row.qty, row.actualUnitPrice), pair())
   }));
   const masonryTotals = masonryRows.map((row) => ({
     ...row,
     item: masonryItemMap[row.itemId] || pricing.masonryItems[0],
     customText: rowText(row, masonryItemMap[row.itemId] || pricing.masonryItems[0]),
     unit: editableUnit(row, (masonryItemMap[row.itemId] || pricing.masonryItems[0]).unit),
-    subtotal: actualPricedPair(row.qty, row.actualUnitPrice)
+    subtotal: enabledSubtotal(row, actualPricedPair(row.qty, row.actualUnitPrice), pair())
   }));
   const plumbingExtraTotal = plumbingExtraTotals.reduce((sum, row) => addPair(sum, row.subtotal), pair());
   const paintingExtraTotal = paintingExtraTotals.reduce((sum, row) => addPair(sum, row.subtotal), pair());
@@ -376,10 +378,10 @@ function App() {
   const masonryTotal = masonryTotals.reduce((sum, row) => addPair(sum, row.subtotal), pair());
   const protectionTotals = protectionRows.map((row) => ({
     ...row,
-    subtotal: actualPricedPair(row.qty, row.actualUnitPrice)
+    subtotal: enabledSubtotal(row, actualPricedPair(row.qty, row.actualUnitPrice), pair())
   }));
   const protectionTotal = protectionTotals.reduce((sum, row) => addPair(sum, row.subtotal), pair());
-  const cleanupTotal = actualPricedPair(cleanupQty, cleanupActualUnitPrice);
+  const cleanupTotal = cleanupEnabled ? actualPricedPair(cleanupQty, cleanupActualUnitPrice) : pair();
   const plumbingTotal = plumbingExtraTotal;
   const paintingTotal = paintingExtraTotal;
   const grandTotal = [cabinetTotal, woodTotal, flooringTotal, masonryTotal, protectionTotal, cleanupTotal, plumbingTotal, paintingTotal, airConditioningTotal, customTotal].reduce(addPair, pair());
@@ -525,16 +527,16 @@ function App() {
   };
 
   const estimateNoteLines = [
-    ...customTrades.flatMap((trade) => trade.rows.map((row) => cleanNote(row.note) ? `- ${trade.name.trim() || "自訂工程"}｜${row.area || "全室"}｜${row.name.trim() || "未命名項目"}：${cleanNote(row.note)}` : "")),
-    ...cabinetTotals.map((row) => cleanNote(row.note) ? `- 櫃體工程｜${row.area}｜${row.customText}：${cleanNote(row.note)}` : ""),
-    ...woodTotals.map((row) => cleanNote(row.note) ? `- 木作工程｜${row.area}｜${row.customText}：${cleanNote(row.note)}` : ""),
-    ...flooringTotals.map((row) => hasAmount(row.subtotal) && cleanNote(row.note) ? `- 地板工程｜${row.area}｜${row.customText}：${cleanNote(row.note)}` : ""),
-    ...masonryTotals.map((row) => hasAmount(row.subtotal) && cleanNote(row.note) ? `- 土水工程｜${row.area}｜${row.customText}：${cleanNote(row.note)}` : ""),
-    ...protectionTotals.map((row) => hasAmount(row.subtotal) && cleanNote(row.note) ? `- 保護工程｜${row.area || "未填區域"}｜${row.customText || "保護工程"}：${cleanNote(row.note)}` : ""),
-    hasAmount(cleanupTotal) && cleanNote(cleanupNote) ? `- 清運廢棄物工程｜${cleanupArea}｜${cleanupText}：${cleanNote(cleanupNote)}` : "",
-    ...plumbingExtraTotals.map((row) => hasAmount(row.subtotal) && cleanNote(row.note) ? `- 水電工程｜${row.area}｜${row.customText}：${cleanNote(row.note)}` : ""),
-    ...paintingExtraTotals.map((row) => hasAmount(row.subtotal) && cleanNote(row.note) ? `- 油漆工程｜${row.area}｜${row.customText}：${cleanNote(row.note)}` : ""),
-    ...airConditioningTotals.map((row) => hasAmount(row.subtotal) && cleanNote(row.note) ? `- 空調工程｜${row.area}｜${row.customText}：${cleanNote(row.note)}` : "")
+    ...enabledRows(customTrades).flatMap((trade) => enabledRows(trade.rows).map((row) => cleanNote(row.note) ? `- ${trade.name.trim() || "自訂工程"}｜${row.area || "全室"}｜${row.name.trim() || "未命名項目"}：${cleanNote(row.note)}` : "")),
+    ...enabledRows(cabinetTotals).map((row) => cleanNote(row.note) ? `- 櫃體工程｜${row.area}｜${row.customText}：${cleanNote(row.note)}` : ""),
+    ...enabledRows(woodTotals).map((row) => cleanNote(row.note) ? `- 木作工程｜${row.area}｜${row.customText}：${cleanNote(row.note)}` : ""),
+    ...enabledRows(flooringTotals).map((row) => hasAmount(row.subtotal) && cleanNote(row.note) ? `- 地板工程｜${row.area}｜${row.customText}：${cleanNote(row.note)}` : ""),
+    ...enabledRows(masonryTotals).map((row) => hasAmount(row.subtotal) && cleanNote(row.note) ? `- 土水工程｜${row.area}｜${row.customText}：${cleanNote(row.note)}` : ""),
+    ...enabledRows(protectionTotals).map((row) => hasAmount(row.subtotal) && cleanNote(row.note) ? `- 保護工程｜${row.area || "未填區域"}｜${row.customText || "保護工程"}：${cleanNote(row.note)}` : ""),
+    cleanupEnabled && hasAmount(cleanupTotal) && cleanNote(cleanupNote) ? `- 清運廢棄物工程｜${cleanupArea}｜${cleanupText}：${cleanNote(cleanupNote)}` : "",
+    ...enabledRows(plumbingExtraTotals).map((row) => hasAmount(row.subtotal) && cleanNote(row.note) ? `- 水電工程｜${row.area}｜${row.customText}：${cleanNote(row.note)}` : ""),
+    ...enabledRows(paintingExtraTotals).map((row) => hasAmount(row.subtotal) && cleanNote(row.note) ? `- 油漆工程｜${row.area}｜${row.customText}：${cleanNote(row.note)}` : ""),
+    ...enabledRows(airConditioningTotals).map((row) => hasAmount(row.subtotal) && cleanNote(row.note) ? `- 空調工程｜${row.area}｜${row.customText}：${cleanNote(row.note)}` : "")
   ].filter(Boolean);
   const estimateNoteText = estimateNoteLines.join("\n");
   const summaryItemLine = (row) => comparisonSafeMode
@@ -565,7 +567,7 @@ function App() {
       ...(hasAmount(airConditioningTotal) ? [`空調工程：NT$ ${moneyRange(airConditioningTotal)}`] : []),
       ...airConditioningTotals.filter((row) => hasAmount(row.subtotal)).map(summaryItemLine),
       ``,
-      ...customTotals.map((trade) => `${trade.name || "自訂工程"}：NT$ ${moneyRange(trade.subtotal)}`),
+      ...customTotals.filter((trade) => hasAmount(trade.subtotal)).map((trade) => `${trade.name || "自訂工程"}：NT$ ${moneyRange(trade.subtotal)}`),
       ...(estimateNoteText ? [`項目備註：`, estimateNoteText, ``] : []),
       `稅前工程總額：NT$ ${moneyRange(grandTotal)}`,
       ...(managementRate > 0 ? [`監管費（${managementPercent}%）：NT$ ${moneyRange(managementTotal)}`] : []),
@@ -576,11 +578,12 @@ function App() {
       `免責說明：此為線上初估金額，實際報價仍需依現場丈量、材質選擇、施工條件與圖面內容為準。`
     ];
     return lines.join("\n");
-  }, [completionDate, paymentStages, summaryTitle, projectLocationText, customTrades, selectedAreas, cabinetTotal, woodTotal, flooringTotal, flooringTotals, masonryTotal, masonryTotals, protectionTotal, protectionRows, cleanupTotal, cleanupText, cleanupQty, cleanupUnit, cleanupActualUnitPrice, plumbingExtraTotal, plumbingTotal, plumbingExtraTotals, paintingExtraTotal, paintingTotal, paintingExtraTotals, airConditioningTotal, airConditioningTotals, estimateNoteText, comparisonSafeMode, grandTotal, managementRate, managementPercent, managementTotal, invoiceNeeded, invoiceTotal, finalTotal]);
+  }, [completionDate, paymentStages, summaryTitle, projectLocationText, customTrades, selectedAreas, cabinetTotal, woodTotal, flooringTotal, flooringTotals, masonryTotal, masonryTotals, protectionTotal, protectionRows, cleanupEnabled, cleanupTotal, cleanupText, cleanupQty, cleanupUnit, cleanupActualUnitPrice, plumbingExtraTotal, plumbingTotal, plumbingExtraTotals, paintingExtraTotal, paintingTotal, paintingExtraTotals, airConditioningTotal, airConditioningTotals, estimateNoteText, comparisonSafeMode, grandTotal, managementRate, managementPercent, managementTotal, invoiceNeeded, invoiceTotal, finalTotal]);
 
   const rawEstimateRows = [
-    ...customTrades.flatMap((trade) => trade.rows.map((row) => ({trade: trade.name.trim() || "自訂工程", area: row.area || "全室", name: row.name.trim() || "未命名項目", note: row.note || "", qty: row.qty, unit: row.unit, unitPrice: actualUnitPriceText(row.price), subtotal: actualPricedPair(row.qty, row.price)}))),
+    ...customTrades.flatMap((trade) => trade.rows.map((row) => ({enabled: row.enabled, trade: trade.name.trim() || "自訂工程", area: row.area || "全室", name: row.name.trim() || "未命名項目", note: row.note || "", qty: row.qty, unit: row.unit, unitPrice: actualUnitPriceText(row.price), subtotal: actualPricedPair(row.qty, row.price)}))),
     ...cabinetTotals.map((row) => ({
+      enabled: row.enabled,
       trade: "櫃體工程",
       area: row.area,
       name: row.customText,
@@ -591,6 +594,7 @@ function App() {
       subtotal: row.subtotal
     })),
     ...woodTotals.map((row) => ({
+      enabled: row.enabled,
       trade: "木作工程",
       area: row.area,
       name: row.customText,
@@ -601,6 +605,7 @@ function App() {
       subtotal: row.subtotal
     })),
     ...flooringTotals.filter((row) => isPricedItem(row.qty, row.actualUnitPrice)).map((row) => ({
+      enabled: row.enabled,
       trade: "地板工程",
       area: row.area,
       name: row.customText,
@@ -611,6 +616,7 @@ function App() {
       subtotal: row.subtotal
     })),
     ...masonryTotals.filter((row) => isPricedItem(row.qty, row.actualUnitPrice)).map((row) => ({
+      enabled: row.enabled,
       trade: "土水工程",
       area: row.area,
       name: row.customText,
@@ -621,6 +627,7 @@ function App() {
       subtotal: row.subtotal
     })),
     ...protectionTotals.filter((row) => isPricedItem(row.qty, row.actualUnitPrice)).map((row) => ({
+      enabled: row.enabled,
       trade: "保護工程",
       area: row.area || "未填區域",
       name: row.customText || "保護工程",
@@ -631,6 +638,7 @@ function App() {
       subtotal: row.subtotal
     })),
     ...(isPricedItem(cleanupQty, cleanupActualUnitPrice) ? [{
+      enabled: cleanupEnabled,
       trade: "清運廢棄物工程",
       area: cleanupArea,
       name: cleanupText,
@@ -641,6 +649,7 @@ function App() {
       subtotal: cleanupTotal
     }] : []),
     ...plumbingExtraTotals.filter((row) => isPricedItem(row.qty, row.actualUnitPrice)).map((row) => ({
+      enabled: row.enabled,
       trade: "水電工程",
       area: row.area,
       name: row.customText,
@@ -651,6 +660,7 @@ function App() {
       subtotal: row.subtotal
     })),
     ...paintingExtraTotals.filter((row) => isPricedItem(row.qty, row.actualUnitPrice)).map((row) => ({
+      enabled: row.enabled,
       trade: "油漆工程",
       area: row.area,
       name: row.customText,
@@ -661,6 +671,7 @@ function App() {
       subtotal: row.subtotal
     })),
     ...airConditioningTotals.filter((row) => isPricedItem(row.qty, row.actualUnitPrice)).map((row) => ({
+      enabled: row.enabled,
       trade: "空調工程",
       area: row.area,
       name: row.customText,
@@ -670,7 +681,7 @@ function App() {
       unitPrice: actualUnitPriceText(row.actualUnitPrice),
       subtotal: row.subtotal
     }))
-  ];
+  ].filter(isItemEnabled);
   const estimateRows = rawEstimateRows.map((row) => toComparisonSafeRow(row, comparisonSafeMode, `NT$ ${moneyRange(row.subtotal)}`));
 
   const estimateAreaOrder = ["客廳", "全室", ...allAreas.filter((area) => area !== "客廳")];
@@ -1620,7 +1631,7 @@ function App() {
               {hasAmount(plumbingTotal) && <SummaryLine label="水電工程" range={plumbingTotal} />}
               {hasAmount(paintingTotal) && <SummaryLine label="油漆工程" range={paintingTotal} />}
               {hasAmount(airConditioningTotal) && <SummaryLine label="空調工程" range={airConditioningTotal} />}
-              {customTotals.map((trade) => <SummaryLine key={trade.id} label={trade.name || "自訂工程"} range={trade.subtotal} />)}
+              {customTotals.filter((trade) => hasAmount(trade.subtotal)).map((trade) => <SummaryLine key={trade.id} label={trade.name || "自訂工程"} range={trade.subtotal} />)}
               <SummaryLine label="稅前工程總額" range={grandTotal} />
               {managementRate > 0 && <SummaryLine label="監管費" range={managementTotal} />}
               {invoiceNeeded && <SummaryLine label="發票稅金" range={invoiceTotal} />}
