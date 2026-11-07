@@ -301,13 +301,6 @@ function App() {
   const airConditioningItemMap = React.useMemo(() => Object.fromEntries(pricing.airConditioningItems.map((item) => [item.id, item])), []);
   const masonryItemMap = React.useMemo(() => Object.fromEntries(pricing.masonryItems.map((item) => [item.id, item])), []);
   const floorItem = pricing.flooring.find((item) => item.id === floorGrade) || pricing.flooring[0];
-  const [plumbingBaseLow, setPlumbingBaseLow] = useDraftState("plumbingBaseLow", pricing.plumbingElectric["新成屋"].low);
-  const [plumbingBaseHigh, setPlumbingBaseHigh] = useDraftState("plumbingBaseHigh", pricing.plumbingElectric["新成屋"].high);
-  const [plumbingBaseFixed, setPlumbingBaseFixed] = useDraftState("plumbingBaseFixed", "");
-  const [plumbingBaseArea, setPlumbingBaseArea] = useDraftState("plumbingBaseArea", "全室");
-  const [plumbingBaseText, setPlumbingBaseText] = useDraftState("plumbingBaseText", "新成屋基礎水電");
-  const [plumbingBaseNote, setPlumbingBaseNote] = useDraftState("plumbingBaseNote", "");
-  const [plumbingBaseActualUnitPrice, setPlumbingBaseActualUnitPrice] = useDraftState("plumbingBaseActualUnitPrice", "");
 
   const visibleCabinetRows = cabinetRows.filter((row) => selectedAreas.includes(row.area));
 
@@ -342,8 +335,6 @@ function App() {
   const cabinetTotal = cabinetTotals.reduce((sum, row) => addPair(sum, row.subtotal), pair());
   const woodTotal = woodTotals.reduce((sum, row) => addPair(sum, row.subtotal), pair());
   const flooringTotal = floorNeeded ? actualPricedPair(floorPing, floorActualUnitPrice) : pair();
-  const peRate = pricing.plumbingElectric[condition];
-  const plumbingBaseTotal = actualPricedPair(ping, plumbingBaseActualUnitPrice);
   const plumbingExtraTotals = plumbingExtras.map((row) => ({
     ...row,
     item: plumbingItemMap[row.itemId] || pricing.plumbingExtraItems[0],
@@ -382,7 +373,7 @@ function App() {
   }));
   const protectionTotal = protectionTotals.reduce((sum, row) => addPair(sum, row.subtotal), pair());
   const cleanupTotal = actualPricedPair(cleanupQty, cleanupActualUnitPrice);
-  const plumbingTotal = addPair(plumbingBaseTotal, plumbingExtraTotal);
+  const plumbingTotal = plumbingExtraTotal;
   const paintingTotal = paintingExtraTotal;
   const grandTotal = [cabinetTotal, woodTotal, flooringTotal, masonryTotal, protectionTotal, cleanupTotal, plumbingTotal, paintingTotal, airConditioningTotal, customTotal].reduce(addPair, pair());
   const invoiceTotal = invoiceNeeded ? pair(grandTotal.low * 0.05, grandTotal.high * 0.05) : pair();
@@ -424,13 +415,7 @@ function App() {
   };
 
   const updateCondition = (value) => {
-    const nextPeRate = pricing.plumbingElectric[value];
     setCondition(value);
-    setPlumbingBaseLow(nextPeRate.low);
-    setPlumbingBaseHigh(nextPeRate.high);
-    setPlumbingBaseText(`${value}基礎水電`);
-    setPlumbingBaseActualUnitPrice("");
-    setPlumbingBaseFixed("");
     setShowResult(false);
   };
 
@@ -544,7 +529,6 @@ function App() {
     ...masonryTotals.map((row) => hasAmount(row.subtotal) && cleanNote(row.note) ? `- 土水工程｜${row.area}｜${row.customText}：${cleanNote(row.note)}` : ""),
     ...protectionTotals.map((row) => hasAmount(row.subtotal) && cleanNote(row.note) ? `- 保護工程｜${row.area || "未填區域"}｜${row.customText || "保護工程"}：${cleanNote(row.note)}` : ""),
     hasAmount(cleanupTotal) && cleanNote(cleanupNote) ? `- 清運廢棄物工程｜${cleanupArea}｜${cleanupText}：${cleanNote(cleanupNote)}` : "",
-    hasAmount(plumbingBaseTotal) && cleanNote(plumbingBaseNote) ? `- 水電工程｜${plumbingBaseArea}｜${plumbingBaseText}：${cleanNote(plumbingBaseNote)}` : "",
     ...plumbingExtraTotals.map((row) => hasAmount(row.subtotal) && cleanNote(row.note) ? `- 水電工程｜${row.area}｜${row.customText}：${cleanNote(row.note)}` : ""),
     ...paintingExtraTotals.map((row) => hasAmount(row.subtotal) && cleanNote(row.note) ? `- 油漆工程｜${row.area}｜${row.customText}：${cleanNote(row.note)}` : ""),
     ...airConditioningTotals.map((row) => hasAmount(row.subtotal) && cleanNote(row.note) ? `- 空調工程｜${row.area}｜${row.customText}：${cleanNote(row.note)}` : "")
@@ -572,7 +556,7 @@ function App() {
       ...(hasAmount(protectionTotal) ? [`保護工程：NT$ ${moneyRange(protectionTotal)}`] : []),
       ...protectionTotals.filter((row) => hasAmount(row.subtotal)).map(summaryItemLine),
       ...(hasAmount(cleanupTotal) ? [`清運廢棄物工程：NT$ ${moneyRange(cleanupTotal)}（${cleanupText} × ${comparisonSafeMode ? "1式" : `${cleanupQty}${cleanupUnit} × ${actualUnitPriceText(cleanupActualUnitPrice)}`}）`] : []),
-      ...(hasAmount(plumbingTotal) ? [`水電工程：NT$ ${moneyRange(plumbingTotal)}（基礎 ${moneyRange(plumbingBaseTotal)}，加價 ${moneyRange(plumbingExtraTotal)}）`] : []),
+      ...(hasAmount(plumbingTotal) ? [`水電工程：NT$ ${moneyRange(plumbingTotal)}`] : []),
       ...plumbingExtraTotals.filter((row) => hasAmount(row.subtotal)).map(summaryItemLine),
       ...(hasAmount(paintingTotal) ? [`油漆工程：NT$ ${moneyRange(paintingTotal)}`] : []),
       ...paintingExtraTotals.filter((row) => hasAmount(row.subtotal)).map(summaryItemLine),
@@ -590,7 +574,7 @@ function App() {
       `免責說明：此為線上初估金額，實際報價仍需依現場丈量、材質選擇、施工條件與圖面內容為準。`
     ];
     return lines.join("\n");
-  }, [completionDate, paymentStages, summaryTitle, projectLocationText, customTrades, ping, condition, selectedAreas, cabinetTotal, woodTotal, floorNeeded, flooringTotal, masonryTotal, masonryTotals, protectionTotal, protectionRows, cleanupTotal, cleanupText, cleanupQty, cleanupUnit, cleanupActualUnitPrice, plumbingBaseTotal, plumbingExtraTotal, plumbingTotal, plumbingExtraTotals, paintingExtraTotal, paintingTotal, paintingExtraTotals, airConditioningTotal, airConditioningTotals, estimateNoteText, comparisonSafeMode, grandTotal, managementRate, managementPercent, managementTotal, invoiceNeeded, invoiceTotal, finalTotal]);
+  }, [completionDate, paymentStages, summaryTitle, projectLocationText, customTrades, ping, condition, selectedAreas, cabinetTotal, woodTotal, floorNeeded, flooringTotal, masonryTotal, masonryTotals, protectionTotal, protectionRows, cleanupTotal, cleanupText, cleanupQty, cleanupUnit, cleanupActualUnitPrice, plumbingExtraTotal, plumbingTotal, plumbingExtraTotals, paintingExtraTotal, paintingTotal, paintingExtraTotals, airConditioningTotal, airConditioningTotals, estimateNoteText, comparisonSafeMode, grandTotal, managementRate, managementPercent, managementTotal, invoiceNeeded, invoiceTotal, finalTotal]);
 
   const rawEstimateRows = [
     ...customTrades.flatMap((trade) => trade.rows.map((row) => ({trade: trade.name.trim() || "自訂工程", area: row.area || "全室", name: row.name.trim() || "未命名項目", note: row.note || "", qty: row.qty, unit: row.unit, unitPrice: actualUnitPriceText(row.price), subtotal: actualPricedPair(row.qty, row.price)}))),
@@ -653,16 +637,6 @@ function App() {
       unit: cleanupUnit,
       unitPrice: actualUnitPriceText(cleanupActualUnitPrice),
       subtotal: cleanupTotal
-    }] : []),
-    ...(isPricedItem(ping, plumbingBaseActualUnitPrice) ? [{
-      trade: "水電工程",
-      area: plumbingBaseArea,
-      name: plumbingBaseText,
-      note: plumbingBaseNote,
-      qty: ping,
-      unit: "坪",
-      unitPrice: actualUnitPriceText(plumbingBaseActualUnitPrice),
-      subtotal: plumbingBaseTotal
     }] : []),
     ...plumbingExtraTotals.filter((row) => isPricedItem(row.qty, row.actualUnitPrice)).map((row) => ({
       trade: "水電工程",
@@ -1477,23 +1451,6 @@ function App() {
 
           <Card title="水電工程估價" defaultOpen={false}>
             <div className="grid gap-4">
-              <div className="rounded-lg bg-white p-4 text-sm leading-7 text-stone-700">
-                <div>基礎估算：{condition}，參考 {money(plumbingBaseLow)}-{money(plumbingBaseHigh)}元／坪，填入實際單價後自動列入估價。</div>
-                <div className="mt-3 grid gap-3 md:grid-cols-[130px_1fr_130px]">
-                  <AreaSelect value={plumbingBaseArea} selectedAreas={selectedAreas} allAreas={allAreas} includeWhole allowCustom onChange={(area) => { setPlumbingBaseArea(area); setShowResult(false); }} />
-                  <Field label="基礎項目文字">
-                    <input className={fullTextInputClass} value={plumbingBaseText} onChange={(e) => { setPlumbingBaseText(e.target.value); setShowResult(false); }} />
-                  </Field>
-                  <Field label="實際單價／坪">
-                    <input className={numberInputClass} type="number" min="0" value={plumbingBaseActualUnitPrice} placeholder="自行填入" onChange={(e) => { setPlumbingBaseActualUnitPrice(e.target.value); setShowResult(false); }} />
-                  </Field>
-                </div>
-                <div>基礎小計：<b>NT$ {moneyRange(plumbingBaseTotal)}</b></div>
-                <div>加價小計：<b>NT$ {moneyRange(plumbingExtraTotal)}</b></div>
-                <div>水電工程總計：<b>NT$ {moneyRange(plumbingTotal)}</b></div>
-                <NoteField value={plumbingBaseNote} onChange={(note) => { setPlumbingBaseNote(note); setShowResult(false); }} />
-              </div>
-
               <div className="grid gap-3">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <h3 className="text-lg font-black text-coffee">水電加價項目</h3>
