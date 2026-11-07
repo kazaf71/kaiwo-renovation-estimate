@@ -12,6 +12,7 @@ const {
   formatCabinetQuantity,
   formatProjectLocation,
   isPricedItem,
+  sortEstimateRowsByArea,
   toEstimateDetailCells,
   toComparisonSafeRow
 } = window.KaiwoEstimateDisplay;
@@ -723,9 +724,10 @@ function App() {
   const estimateRows = rawEstimateRows.map((row) => toComparisonSafeRow(row, comparisonSafeMode, `NT$ ${moneyRange(row.subtotal)}`));
 
   const tradeOrder = [...new Set(["櫃體工程", "木作工程", "地板工程", "土水工程", "保護工程", "清運廢棄物工程", "水電工程", "油漆工程", "空調工程", ...customTrades.map((trade) => trade.name.trim() || "自訂工程")])];
+  const estimateAreaOrder = ["客廳", "全室", ...allAreas.filter((area) => area !== "客廳")];
   const estimateGroups = tradeOrder
     .map((trade) => {
-      const rows = estimateRows.filter((row) => row.trade === trade);
+      const rows = sortEstimateRowsByArea(estimateRows.filter((row) => row.trade === trade), estimateAreaOrder);
       return {
         trade,
         rows,

@@ -10,6 +10,7 @@ const {
   formatCabinetQuantity,
   formatProjectLocation,
   isPricedItem,
+  sortEstimateRowsByArea,
   toEstimateDetailCells,
   toComparisonSafeRow
 } = require("./estimate-display-utils.js");
@@ -23,6 +24,23 @@ const sourceRow = {
   unitPrice: "500元",
   subtotal: { low: 2000, high: 2000 }
 };
+
+test("estimate rows keep each area together with the living room first", () => {
+  const rows = [
+    { id: "living-1", area: "客廳" },
+    { id: "main-1", area: "主臥室" },
+    { id: "living-2", area: "客廳" },
+    { id: "secondary-1", area: "次臥室1" },
+    { id: "main-2", area: "主臥室" },
+    { id: "custom", area: "公共走道" }
+  ];
+
+  assert.deepEqual(
+    sortEstimateRowsByArea(rows, ["客廳", "全室", "玄關", "主臥室", "次臥室1"])
+      .map((row) => row.id),
+    ["living-1", "living-2", "main-1", "main-2", "secondary-1", "custom"]
+  );
+});
 
 test("payment stages are consecutively numbered after blanks and deletions", () => {
   const stages = [{name:"簽約",percent:5},{name:" ",percent:10},{name:"木工進場",percent:30},{name:"尾款",percent:""}];

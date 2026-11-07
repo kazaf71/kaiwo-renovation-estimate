@@ -33,6 +33,23 @@
   const formatProjectLocation = (projectLocation) =>
     String(projectLocation || "").trim() || "未填寫";
 
+  const sortEstimateRowsByArea = (rows, areaOrder = []) => {
+    const rank = new Map(areaOrder.map((area, index) => [area, index]));
+    return rows
+      .map((row, index) => ({ row, index }))
+      .sort((left, right) => {
+        const leftRank = rank.has(left.row.area) ? rank.get(left.row.area) : Number.MAX_SAFE_INTEGER;
+        const rightRank = rank.has(right.row.area) ? rank.get(right.row.area) : Number.MAX_SAFE_INTEGER;
+        if (leftRank !== rightRank) return leftRank - rightRank;
+        if (leftRank === Number.MAX_SAFE_INTEGER) {
+          const areaOrderResult = String(left.row.area || "").localeCompare(String(right.row.area || ""), "zh-Hant");
+          if (areaOrderResult) return areaOrderResult;
+        }
+        return left.index - right.index;
+      })
+      .map(({ row }) => row);
+  };
+
   const toEstimateDetailCells = (row, subtotalText) => {
     const itemName = row.area && row.area !== "-" ? `${row.area}｜${row.name}` : row.name;
     return [itemName, row.qty, row.unit, row.unitPrice, subtotalText, String(row.note || "").trim()];
@@ -54,6 +71,7 @@
     formatCabinetQuantity,
     formatProjectLocation,
     isPricedItem,
+    sortEstimateRowsByArea,
     toEstimateDetailCells,
     toComparisonSafeRow
   };
