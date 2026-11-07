@@ -33,3 +33,12 @@ test("painting rows keep area, custom text, quantity, unit and actual price cont
   assert.match(app, /value=\{row\.actualUnitPrice\}/);
   assert.match(app, /<Field label="實際單價">[\s\S]*參考價：\{referenceText\(row\.item\)\}[\s\S]*<\/Field>/);
 });
+
+test("painting page removes the legacy base estimate from totals and exports", () => {
+  assert.doesNotMatch(app, /paintingBase/);
+  assert.match(app, /const paintingTotal = paintingExtraTotal;/);
+});
+
+test("painting item areas support both quick choices and custom typing", () => {
+  assert.match(app, /<AreaSelect value=\{row\.area\} selectedAreas=\{selectedAreas\} allAreas=\{allAreas\} allowCustom onChange=\{\(area\) => updatePaintingExtra/);
+});

@@ -1,6 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { areaChoices, moveItemToArea, migrateProtectionRows, updateProtectionRow, removeProtectionRow } = require("./area-utils.js");
+const fs = require("node:fs");
 
 test("area choices keep the item's current area and offer selected destinations", () => {
   assert.deepEqual(
@@ -55,4 +56,12 @@ test("protection rows can be edited and removed independently", () => {
     { ...rows[1], qty: 2 }
   ]);
   assert.deepEqual(removeProtectionRow(rows, "public"), [rows[1]]);
+});
+
+test("every trade area control supports quick choices and custom typing", () => {
+  const app = fs.readFileSync("./app.jsx", "utf8");
+  const areaControls = app.split("\n").filter((line) => line.includes("<AreaSelect "));
+  assert.ok(areaControls.length >= 10);
+  for (const control of areaControls) assert.match(control, /\ballowCustom\b/);
+  assert.doesNotMatch(app, /<select aria-label="施工區域" value=\{row\.area\}/);
 });
