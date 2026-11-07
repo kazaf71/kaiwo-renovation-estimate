@@ -267,12 +267,8 @@ function App() {
     setShowResult(false);
   };
   const [floorArea, setFloorArea] = useDraftState("floorArea", "全室");
-  const [floorGrade, setFloorGrade] = useDraftState("floorGrade", "middle");
   const [floorPing, setFloorPing] = useDraftState("floorPing", 18);
-  const [floorLow, setFloorLow] = useDraftState("floorLow", 5000);
-  const [floorHigh, setFloorHigh] = useDraftState("floorHigh", 5000);
-  const [floorFixed, setFloorFixed] = useDraftState("floorFixed", "");
-  const [floorText, setFloorText] = useDraftState("floorText", "中階地板");
+  const [floorText, setFloorText] = useDraftState("floorText", "地板工程");
   const [floorNote, setFloorNote] = useDraftState("floorNote", "");
   const [floorUnit, setFloorUnit] = useDraftState("floorUnit", "坪");
   const [floorActualUnitPrice, setFloorActualUnitPrice] = useDraftState("floorActualUnitPrice", "");
@@ -309,7 +305,10 @@ function App() {
   const paintingItemMap = React.useMemo(() => Object.fromEntries(pricing.paintingExtraItems.map((item) => [item.id, item])), []);
   const airConditioningItemMap = React.useMemo(() => Object.fromEntries(pricing.airConditioningItems.map((item) => [item.id, item])), []);
   const masonryItemMap = React.useMemo(() => Object.fromEntries(pricing.masonryItems.map((item) => [item.id, item])), []);
-  const floorItem = pricing.flooring.find((item) => item.id === floorGrade) || pricing.flooring[0];
+  const floorReference = pair(
+    Math.min(...pricing.flooring.map((item) => Number(item.low || 0))),
+    Math.max(...pricing.flooring.map((item) => Number(item.high || 0)))
+  );
 
   const visibleCabinetRows = cabinetRows.filter((row) => selectedAreas.includes(row.area));
 
@@ -409,18 +408,6 @@ function App() {
   const updateWoodItem = (id, itemId) => {
     const item = woodItemMap[itemId] || pricing.woodworkItems[0];
     updateWood(id, { itemId, low: item.low, high: item.high, fixed: "", customText: itemDisplayName(item), unit: item.unit, actualUnitPrice: "" });
-  };
-
-  const updateFloorGrade = (gradeId) => {
-    const item = pricing.flooring.find((floor) => floor.id === gradeId) || pricing.flooring[0];
-    setFloorGrade(gradeId);
-    setFloorLow(item.low);
-    setFloorHigh(item.high);
-    setFloorText(itemDisplayName(item));
-    setFloorUnit("坪");
-    setFloorActualUnitPrice("");
-    setFloorFixed("");
-    setShowResult(false);
   };
 
   const updatePlumbingExtra = (id, patch) => {
@@ -1295,11 +1282,6 @@ function App() {
           <Card title="地板工程" defaultOpen={false}>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="grid gap-3">
-                <Field label="地板工程等級">
-                  <select className="rounded-lg border border-coffee/20 bg-white px-3 py-3 disabled:bg-stone-100 disabled:text-stone-400" value={floorGrade} onChange={(e) => updateFloorGrade(e.target.value)}>
-                    {pricing.flooring.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-                  </select>
-                </Field>
                 <AreaSelect value={floorArea} selectedAreas={selectedAreas} allAreas={allAreas} includeWhole allowCustom onChange={(area) => { setFloorArea(area); setShowResult(false); }} />
                 <Field label="項目文字">
                   <input className={fullTextInputClass} value={floorText} onChange={(e) => { setFloorText(e.target.value); setShowResult(false); }} />
@@ -1314,7 +1296,7 @@ function App() {
                 <NoteField value={floorNote} onChange={(note) => { setFloorNote(note); setShowResult(false); }} />
               </div>
               <div className="rounded-lg bg-white p-4 text-sm leading-7 text-stone-700">
-                <div>參考依據：{referenceText(floorItem, "坪")}</div>
+                <div>價位建議：{moneyRange(floorReference)}／坪</div>
                 <div>實際單價：{actualUnitPriceText(floorActualUnitPrice)}／{floorUnit}</div>
                 <div>目前小計：NT$ {moneyRange(flooringTotal)}</div>
               </div>

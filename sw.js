@@ -1,9 +1,9 @@
-const CACHE_NAME = "kaiwo-estimate-v40";
+const CACHE_NAME = "kaiwo-estimate-v41";
 const APP_SHELL = [
   "/",
   "/index.html",
   "/styles.css",
-  "/app.jsx?v=38",
+  "/app.jsx?v=39",
   "/note-utils.js?v=15",
   "/editable-text-utils.js?v=2",
   "/unit-utils.js?v=1",
