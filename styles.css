@@ -130,14 +130,22 @@ html body.bg-cream { min-height: 100vh; background: var(--shell) !important; col
 .custom-table th { padding: 9px 6px; background: var(--panel); text-align: left; white-space: nowrap; }
 .custom-table td { padding: 8px 4px; border-bottom: 1px solid var(--shell); }
 .custom-table input, .custom-table select { width: 100%; min-width: 60px; padding: 8px 6px; border: 1px solid var(--shell); border-radius: 4px; background: white; }
-.custom-table th:first-child { width: 28%; }
-.custom-table th:nth-child(3), .custom-table th:nth-child(4) { width: 10%; }
+.custom-table th:first-child { width: 110px; }
+.custom-table th:nth-child(2) { width: 28%; }
+.custom-table th:nth-child(4), .custom-table th:nth-child(5) { width: 10%; }
 .custom-amount { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 .wood-entry-grid { display: grid; gap: 12px; align-items: end; }
 .wood-text-input { width: 100%; }
 
 .item-note { display: grid; gap: 6px; margin-top: 12px; }
+.item-enabled-toggle {
+  display: inline-flex; align-items: center; gap: 8px; width: fit-content;
+  margin-bottom: 12px; padding: 7px 10px; border: 1px solid var(--shell);
+  border-radius: 4px; background: var(--paper); font-size: 13px; font-weight: 800;
+}
+.item-enabled-toggle input { width: 18px !important; min-width: 18px !important; height: 18px; margin: 0; }
+.item-paused { opacity: .58; }
 .item-note span { font-size: 13px; font-weight: 700; }
 .item-note textarea {
   width: 100%; min-height: 64px; padding: 10px 12px;

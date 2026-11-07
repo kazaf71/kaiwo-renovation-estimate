@@ -200,6 +200,15 @@ function UnitSelect({ value, onChange, className = numberInputClass }) {
   );
 }
 
+function ItemEnabledToggle({ enabled, onChange }) {
+  return (
+    <label className="item-enabled-toggle">
+      <input type="checkbox" checked={enabled} onChange={(event) => onChange(event.target.checked)} />
+      <span>顯示／計價</span>
+    </label>
+  );
+}
+
 const WorkspaceContext = React.createContext("基本資料");
 const workSections = ["基本資料", "需要估價的區域", "櫃體工程估價", "木作工程估價", "地板工程", "土水工程估價", "保護工程", "清運廢棄物工程", "水電工程估價", "油漆工程估價", "空調工程估價", "自訂工程", "付款方式"];
 
@@ -408,7 +417,7 @@ function App() {
 
   const addFloor = () => {
     setFloorRows((rows) => [...rows, {
-      id: crypto.randomUUID(), area: selectedAreas[0] || "全室", customText: "地板工程",
+      id: crypto.randomUUID(), enabled: true, area: selectedAreas[0] || "全室", customText: "地板工程",
       qty: "", unit: "坪", actualUnitPrice: "", note: ""
     }]);
     setShowResult(false);
@@ -452,6 +461,7 @@ function App() {
   const addProtection = () => {
     setProtectionRows((rows) => [...rows, {
       id: crypto.randomUUID(),
+      enabled: true,
       area: "",
       customText: "保護工程",
       note: "",
@@ -486,38 +496,38 @@ function App() {
     const item = cabinetTypeMap.tall || pricing.cabinetTypes[0];
     setCabinetRows((rows) => [
       ...rows,
-      { id: crypto.randomUUID(), area, name: "新增櫃體", customText: itemDisplayName(item), note: "", type: "tall", widthCm: 120, qty: 1, unit: "尺", low: item.low, high: item.high, fixed: "", actualUnitPrice: "" }
+      { id: crypto.randomUUID(), enabled: true, area, name: "新增櫃體", customText: itemDisplayName(item), note: "", type: "tall", widthCm: 120, qty: 1, unit: "尺", low: item.low, high: item.high, fixed: "", actualUnitPrice: "" }
     ]);
     setShowResult(false);
   };
 
   const addWood = (area = selectedAreas[0] || "全室") => {
     const item = woodItemMap.flatCeiling || pricing.woodworkItems[0];
-    setWoodRows((rows) => [...rows, { id: crypto.randomUUID(), area, itemId: item.id, customText: itemDisplayName(item), note: "", qty: 1, unit: item.unit, low: item.low, high: item.high, fixed: "", actualUnitPrice: "" }]);
+    setWoodRows((rows) => [...rows, { id: crypto.randomUUID(), enabled: true, area, itemId: item.id, customText: itemDisplayName(item), note: "", qty: 1, unit: item.unit, low: item.low, high: item.high, fixed: "", actualUnitPrice: "" }]);
     setShowResult(false);
   };
 
   const addPlumbingExtra = () => {
     const item = pricing.plumbingExtraItems[0];
-    setPlumbingExtras((rows) => [...rows, { id: crypto.randomUUID(), area: selectedAreas[0] || "客廳", itemId: item.id, customText: itemDisplayName(item), note: "", qty: 1, unit: item.unit, low: item.low, high: item.high, fixed: "", actualUnitPrice: "" }]);
+    setPlumbingExtras((rows) => [...rows, { id: crypto.randomUUID(), enabled: true, area: selectedAreas[0] || "客廳", itemId: item.id, customText: itemDisplayName(item), note: "", qty: 1, unit: item.unit, low: item.low, high: item.high, fixed: "", actualUnitPrice: "" }]);
     setShowResult(false);
   };
 
   const addPaintingExtra = () => {
     const item = pricing.paintingExtraItems[0];
-    setPaintingExtras((rows) => [...rows, { id: crypto.randomUUID(), area: selectedAreas[0] || "客廳", itemId: item.id, customText: itemDisplayName(item), note: "", qty: 1, unit: item.unit, low: item.low, high: item.high, fixed: "", actualUnitPrice: "" }]);
+    setPaintingExtras((rows) => [...rows, { id: crypto.randomUUID(), enabled: true, area: selectedAreas[0] || "客廳", itemId: item.id, customText: itemDisplayName(item), note: "", qty: 1, unit: item.unit, low: item.low, high: item.high, fixed: "", actualUnitPrice: "" }]);
     setShowResult(false);
   };
 
   const addAirConditioning = () => {
     const item = pricing.airConditioningItems[0];
-    setAirConditioningRows((rows) => [...rows, { id: crypto.randomUUID(), area: selectedAreas[0] || "客廳", itemId: item.id, customText: itemDisplayName(item), note: "", qty: 1, unit: item.unit, low: item.low, high: item.high, fixed: "", actualUnitPrice: "" }]);
+    setAirConditioningRows((rows) => [...rows, { id: crypto.randomUUID(), enabled: true, area: selectedAreas[0] || "客廳", itemId: item.id, customText: itemDisplayName(item), note: "", qty: 1, unit: item.unit, low: item.low, high: item.high, fixed: "", actualUnitPrice: "" }]);
     setShowResult(false);
   };
 
   const addMasonry = () => {
     const item = pricing.masonryItems[0];
-    setMasonryRows((rows) => [...rows, { id: crypto.randomUUID(), area: selectedAreas[0] || "廁所／浴室", itemId: item.id, customText: itemDisplayName(item), note: "", qty: 1, unit: item.unit, low: item.low, high: item.high, fixed: "", actualUnitPrice: "" }]);
+    setMasonryRows((rows) => [...rows, { id: crypto.randomUUID(), enabled: true, area: selectedAreas[0] || "廁所／浴室", itemId: item.id, customText: itemDisplayName(item), note: "", qty: 1, unit: item.unit, low: item.low, high: item.high, fixed: "", actualUnitPrice: "" }]);
     setShowResult(false);
   };
 
@@ -1202,7 +1212,8 @@ function App() {
                     ) : (
                       <div className="grid gap-3">
                         {areaRows.map((row) => (
-                          <div key={row.id} className="rounded-lg border border-coffee/10 bg-creamSoft p-4">
+                          <div key={row.id} className={`rounded-lg border border-coffee/10 bg-creamSoft p-4 ${isItemEnabled(row) ? "" : "item-paused"}`}>
+                            <ItemEnabledToggle enabled={isItemEnabled(row)} onChange={(enabled) => updateCabinet(row.id, { enabled })} />
                             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[130px_1fr_1fr_110px_90px_90px_120px]">
                               <AreaSelect value={row.area} selectedAreas={selectedAreas} allAreas={allAreas} allowCustom onChange={(area) => { setCabinetRows((rows) => moveItemToArea(rows, row.id, area)); setShowResult(false); }} />
                               <Field label="高度分類">
@@ -1268,7 +1279,8 @@ function App() {
 
                     <div className="grid gap-3">
                       {areaRows.map((row) => (
-                        <div key={row.id} className="rounded-lg border border-coffee/10 bg-cream p-4">
+                        <div key={row.id} className={`rounded-lg border border-coffee/10 bg-cream p-4 ${isItemEnabled(row) ? "" : "item-paused"}`}>
+                          <ItemEnabledToggle enabled={isItemEnabled(row)} onChange={(enabled) => updateWood(row.id, { enabled })} />
                           <div className="wood-entry-grid">
                             <AreaSelect value={row.area} selectedAreas={selectedAreas} allAreas={allAreas} allowCustom onChange={(area) => { setWoodRows((rows) => moveItemToArea(rows, row.id, area)); setShowResult(false); }} />
                             <Field label="木作項目">
@@ -1309,7 +1321,8 @@ function App() {
                 <button className="rounded-lg border border-coffee/20 bg-wood/25 px-4 py-2 text-sm font-black text-coffee" type="button" onClick={addFloor}>新增地板區域</button>
               </div>
               {flooringTotals.map((row) => (
-                <div key={row.id} className="rounded-lg border border-coffee/10 bg-white p-4">
+                <div key={row.id} className={`rounded-lg border border-coffee/10 bg-white p-4 ${isItemEnabled(row) ? "" : "item-paused"}`}>
+                  <ItemEnabledToggle enabled={isItemEnabled(row)} onChange={(enabled) => updateFloor(row.id, { enabled })} />
                   <div className="grid gap-3 md:grid-cols-[130px_1fr_100px_90px_120px_auto] md:items-end">
                     <AreaSelect value={row.area} selectedAreas={selectedAreas} allAreas={allAreas} includeWhole allowCustom onChange={(area) => updateFloor(row.id, { area })} />
                     <Field label="項目文字">
@@ -1346,7 +1359,8 @@ function App() {
                 </div>
 
                 {masonryTotals.map((row) => (
-                  <div key={row.id} className="rounded-lg border border-coffee/10 bg-white p-4">
+                  <div key={row.id} className={`rounded-lg border border-coffee/10 bg-white p-4 ${isItemEnabled(row) ? "" : "item-paused"}`}>
+                    <ItemEnabledToggle enabled={isItemEnabled(row)} onChange={(enabled) => updateMasonry(row.id, { enabled })} />
                     <div className="grid gap-3 md:grid-cols-[130px_1fr_1fr_90px_90px_120px_auto] md:items-end">
                       <AreaSelect value={row.area} selectedAreas={selectedAreas} allAreas={allAreas} allowCustom onChange={(area) => updateMasonry(row.id, { area })} />
                       <Field label="土水項目">
@@ -1384,7 +1398,8 @@ function App() {
                 <button className="rounded-lg border border-coffee/20 bg-wood/25 px-4 py-2 text-sm font-black text-coffee" type="button" onClick={addProtection}>新增保護區域</button>
               </div>
               {protectionTotals.map((row) => (
-                <div key={row.id} className="rounded-lg border border-coffee/10 bg-white p-4">
+                <div key={row.id} className={`rounded-lg border border-coffee/10 bg-white p-4 ${isItemEnabled(row) ? "" : "item-paused"}`}>
+                  <ItemEnabledToggle enabled={isItemEnabled(row)} onChange={(enabled) => updateProtection(row.id, { enabled })} />
                   <div className="grid gap-3 md:grid-cols-[130px_1fr_100px_100px_140px_auto] md:items-end">
                     <AreaSelect value={row.area} selectedAreas={selectedAreas} allAreas={allAreas} includeWhole allowCustom onChange={(area) => updateProtection(row.id, { area })} />
                     <Field label="項目文字">
@@ -1409,7 +1424,8 @@ function App() {
 
           <Card title="清運廢棄物工程" defaultOpen={false}>
             <div className="grid gap-4">
-              <div className="rounded-lg border border-coffee/10 bg-white p-4">
+              <div className={`rounded-lg border border-coffee/10 bg-white p-4 ${cleanupEnabled ? "" : "item-paused"}`}>
+                <ItemEnabledToggle enabled={cleanupEnabled} onChange={(enabled) => { setCleanupEnabled(enabled); setShowResult(false); }} />
                 <div className="grid gap-3 md:grid-cols-[130px_1fr_100px_100px_140px] md:items-end">
                   <AreaSelect value={cleanupArea} selectedAreas={selectedAreas} allAreas={allAreas} includeWhole allowCustom onChange={(area) => { setCleanupArea(area); setShowResult(false); }} />
                   <Field label="項目文字">
@@ -1438,7 +1454,8 @@ function App() {
                 </div>
 
                 {plumbingExtraTotals.map((row) => (
-                  <div key={row.id} className="rounded-lg border border-coffee/10 bg-white p-4">
+                  <div key={row.id} className={`rounded-lg border border-coffee/10 bg-white p-4 ${isItemEnabled(row) ? "" : "item-paused"}`}>
+                    <ItemEnabledToggle enabled={isItemEnabled(row)} onChange={(enabled) => updatePlumbingExtra(row.id, { enabled })} />
                     <div className="grid gap-3 md:grid-cols-[130px_1fr_1fr_90px_90px_120px_auto] md:items-end">
                       <AreaSelect value={row.area} selectedAreas={selectedAreas} allAreas={allAreas} allowCustom onChange={(area) => updatePlumbingExtra(row.id, { area })} />
                       <Field label="水電項目">
@@ -1478,7 +1495,8 @@ function App() {
                 </div>
 
                 {paintingExtraTotals.map((row) => (
-                  <div key={row.id} className="rounded-lg border border-coffee/10 bg-white p-4">
+                  <div key={row.id} className={`rounded-lg border border-coffee/10 bg-white p-4 ${isItemEnabled(row) ? "" : "item-paused"}`}>
+                    <ItemEnabledToggle enabled={isItemEnabled(row)} onChange={(enabled) => updatePaintingExtra(row.id, { enabled })} />
                     <div className="grid gap-3 md:grid-cols-[130px_1fr_1fr_90px_90px_120px_auto] md:items-end">
                       <AreaSelect value={row.area} selectedAreas={selectedAreas} allAreas={allAreas} allowCustom onChange={(area) => updatePaintingExtra(row.id, { area })} />
                       <Field label="油漆項目">
@@ -1526,7 +1544,8 @@ function App() {
                 </div>
 
                 {airConditioningTotals.map((row) => (
-                  <div key={row.id} className="rounded-lg border border-coffee/10 bg-white p-4">
+                  <div key={row.id} className={`rounded-lg border border-coffee/10 bg-white p-4 ${isItemEnabled(row) ? "" : "item-paused"}`}>
+                    <ItemEnabledToggle enabled={isItemEnabled(row)} onChange={(enabled) => updateAirConditioning(row.id, { enabled })} />
                     <div className="grid gap-3 md:grid-cols-[130px_1fr_1fr_90px_90px_120px_auto] md:items-end">
                       <AreaSelect value={row.area} selectedAreas={selectedAreas} allAreas={allAreas} allowCustom onChange={(area) => updateAirConditioning(row.id, { area })} />
                       <Field label="空調項目">
@@ -1557,7 +1576,7 @@ function App() {
             </div>
           </Card>
           <Card title="自訂工程">
-            <button className="custom-add" type="button" onClick={() => { setCustomTrades((trades) => [...trades, {id: crypto.randomUUID(), name: "", rows: [{id: crypto.randomUUID(), name: "", area: "全室", qty: 1, unit: "式", price: "", note: ""}]}]); setShowResult(false); }}>＋ 新增工種</button>
+            <button className="custom-add" type="button" onClick={() => { setCustomTrades((trades) => [...trades, {id: crypto.randomUUID(), name: "", rows: [{id: crypto.randomUUID(), enabled: true, name: "", area: "全室", qty: 1, unit: "式", price: "", note: ""}]}]); setShowResult(false); }}>＋ 新增工種</button>
             {!customTrades.length && <p className="custom-empty">尚無自訂工程</p>}
             {customTotals.map((trade) => <section className="custom-trade" key={trade.id}>
               <div className="custom-heading">
@@ -1565,9 +1584,10 @@ function App() {
                 <strong>小計 NT$ {moneyRange(trade.subtotal)}</strong>
                 <button type="button" title="刪除工種" aria-label="刪除工種" onClick={() => { if (window.confirm("確定刪除此工種及全部項目？")) { setCustomTrades((trades) => trades.filter((item) => item.id !== trade.id)); setShowResult(false); } }}>×</button>
               </div>
-              <div className="custom-table-wrap"><table className="custom-table"><thead><tr><th>項目</th><th>施工區域</th><th>數量</th><th>單位</th><th>單價</th><th>單項總價</th><th></th></tr></thead><tbody>
+              <div className="custom-table-wrap"><table className="custom-table"><thead><tr><th>顯示／計價</th><th>項目</th><th>施工區域</th><th>數量</th><th>單位</th><th>單價</th><th>單項總價</th><th></th></tr></thead><tbody>
                 {trade.rows.map((row) => <React.Fragment key={row.id}>
-                  <tr>
+                  <tr className={isItemEnabled(row) ? "" : "item-paused"}>
+                    <td><ItemEnabledToggle enabled={isItemEnabled(row)} onChange={(enabled) => updateCustomTrade(trade.id, {rows: trade.rows.map((item) => item.id === row.id ? {...item, enabled} : item)})} /></td>
                     <td><input aria-label="項目" placeholder="項目" value={row.name} onChange={(e) => updateCustomTrade(trade.id, {rows: trade.rows.map((item) => item.id === row.id ? {...item, name: e.target.value} : item)})} /></td>
                     <td><AreaSelect value={row.area} selectedAreas={selectedAreas} allAreas={allAreas} includeWhole allowCustom onChange={(area) => updateCustomTrade(trade.id, {rows: moveItemToArea(trade.rows, row.id, area)})} /></td>
                     <td><input aria-label="數量" placeholder="數量" type="number" min="0" step="any" value={row.qty} onChange={(e) => updateCustomTrade(trade.id, {rows: trade.rows.map((item) => item.id === row.id ? {...item, qty: e.target.value !== '' ? Math.max(0, Number(e.target.value)) : e.target.value} : item)})} /></td>
@@ -1576,12 +1596,12 @@ function App() {
                     <td className="custom-amount">{row.price === '' ? '未填單價' : moneyRange(actualPricedPair(row.qty, row.price))}</td>
                     <td><button title="刪除項目" aria-label="刪除項目" type="button" onClick={() => { if (window.confirm("確定刪除此項目？")) updateCustomTrade(trade.id, {rows: trade.rows.filter((item) => item.id !== row.id)}); }}>×</button></td>
                   </tr>
-                  <tr className="custom-note-row">
-                    <td colSpan="7"><NoteField value={row.note} onChange={(note) => updateCustomTrade(trade.id, {rows: trade.rows.map((item) => item.id === row.id ? {...item, note} : item)})} /></td>
+                  <tr className={`custom-note-row ${isItemEnabled(row) ? "" : "item-paused"}`}>
+                    <td colSpan="8"><NoteField value={row.note} onChange={(note) => updateCustomTrade(trade.id, {rows: trade.rows.map((item) => item.id === row.id ? {...item, note} : item)})} /></td>
                   </tr>
                 </React.Fragment>)}
               </tbody></table></div>
-              <button className="custom-add" type="button" onClick={() => updateCustomTrade(trade.id, {rows: [...trade.rows, {id: crypto.randomUUID(), name: '', area: '全室', qty: 1, unit: '式', price: '', note: ''}]})}>＋ 新增項目</button>
+              <button className="custom-add" type="button" onClick={() => updateCustomTrade(trade.id, {rows: [...trade.rows, {id: crypto.randomUUID(), enabled: true, name: '', area: '全室', qty: 1, unit: '式', price: '', note: ''}]})}>＋ 新增項目</button>
             </section>)}
           </Card>
           <Card title="付款方式">
