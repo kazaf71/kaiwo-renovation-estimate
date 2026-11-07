@@ -9,6 +9,7 @@ const {
   estimateOdsColumnWidths,
   formatCabinetQuantity,
   formatProjectLocation,
+  groupEstimateRowsByArea,
   isPricedItem,
   sortEstimateRowsByArea,
   toEstimateDetailCells,
@@ -40,6 +41,20 @@ test("estimate rows keep each area together with the living room first", () => {
       .map((row) => row.id),
     ["living-1", "living-2", "main-1", "main-2", "secondary-1", "custom"]
   );
+});
+
+test("estimate groups use area as the primary section across all trades", () => {
+  const rows = [
+    { trade: "木作工程", area: "主臥室", subtotal: { low: 100, high: 100 } },
+    { trade: "水電工程", area: "客廳", subtotal: { low: 200, high: 200 } },
+    { trade: "油漆工程", area: "主臥室", subtotal: { low: 300, high: 300 } },
+    { trade: "木作工程", area: "客廳", subtotal: { low: 400, high: 400 } }
+  ];
+  const groups = groupEstimateRowsByArea(rows, ["客廳", "主臥室"]);
+  assert.deepEqual(groups.map((group) => group.area), ["客廳", "主臥室"]);
+  assert.deepEqual(groups[0].rows.map((row) => row.trade), ["水電工程", "木作工程"]);
+  assert.deepEqual(groups[0].subtotal, { low: 600, high: 600 });
+  assert.deepEqual(groups[1].subtotal, { low: 400, high: 400 });
 });
 
 test("payment stages are consecutively numbered after blanks and deletions", () => {
@@ -122,7 +137,7 @@ test("customer estimate rows use the requested six columns without a blank trade
     unitPrice: "NT$ 7,500元",
     note: "現場確認",
     subtotal: { low: 29703, high: 29703 }
-  }, "NT$ 29,703元"), ["玄關｜鞋櫃", "3.96", "尺", "NT$ 7,500元", "NT$ 29,703元", "現場確認"]);
+  }, "NT$ 29,703元"), ["櫃體工程｜鞋櫃", "3.96", "尺", "NT$ 7,500元", "NT$ 29,703元", "現場確認"]);
 });
 
 test("grouped detail rows begin directly with the item", () => {
@@ -135,7 +150,7 @@ test("grouped detail rows begin directly with the item", () => {
     note: "現場確認"
   };
 
-  assert.deepEqual(toEstimateDetailCells({ ...row, unitPrice: "NT$ 7,500元" }, "NT$ 29,703元"), ["玄關｜鞋櫃", "3.96", "尺", "NT$ 7,500元", "NT$ 29,703元", "現場確認"]);
+  assert.deepEqual(toEstimateDetailCells({ ...row, unitPrice: "NT$ 7,500元" }, "NT$ 29,703元"), ["櫃體工程｜鞋櫃", "3.96", "尺", "NT$ 7,500元", "NT$ 29,703元", "現場確認"]);
 });
 
 test("item and note columns are equally widest in the compact six-column layout", () => {

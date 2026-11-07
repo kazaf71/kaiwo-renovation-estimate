@@ -2,6 +2,7 @@ const pricing = JSON.parse(document.querySelector("#pricing-data").textContent);
 
 const { cleanNote, noteLine } = window.KaiwoNotes;
 const { editableNumber, editableText, editableUnit } = window.KaiwoEditableText;
+const { unitChoices } = window.KaiwoUnits;
 const { areaChoices, moveItemToArea, migrateProtectionRows, updateProtectionRow, removeProtectionRow } = window.KaiwoAreas;
 const {
   buildPaymentLines,
@@ -11,8 +12,8 @@ const {
   estimateOdsColumnWidths,
   formatCabinetQuantity,
   formatProjectLocation,
+  groupEstimateRowsByArea,
   isPricedItem,
-  sortEstimateRowsByArea,
   toEstimateDetailCells,
   toComparisonSafeRow
 } = window.KaiwoEstimateDisplay;
@@ -184,6 +185,16 @@ function NoteField({ value, onChange, disabled = false }) {
       <span>備註（選填）</span>
       <textarea rows="2" value={value || ""} disabled={disabled} placeholder="填寫此項目的施工備註" onChange={(event) => onChange(event.target.value)} />
     </label>
+  );
+}
+
+function UnitSelect({ value, onChange, className = numberInputClass }) {
+  return (
+    <Field label="單位">
+      <select aria-label="單位" className={className} value={value} onChange={(event) => onChange(event.target.value)}>
+        {unitChoices(value).map((unit) => <option key={unit} value={unit}>{unit}</option>)}
+      </select>
+    </Field>
   );
 }
 
@@ -671,18 +682,8 @@ function App() {
   ];
   const estimateRows = rawEstimateRows.map((row) => toComparisonSafeRow(row, comparisonSafeMode, `NT$ ${moneyRange(row.subtotal)}`));
 
-  const tradeOrder = [...new Set(["櫃體工程", "木作工程", "地板工程", "土水工程", "保護工程", "清運廢棄物工程", "水電工程", "油漆工程", "空調工程", ...customTrades.map((trade) => trade.name.trim() || "自訂工程")])];
   const estimateAreaOrder = ["客廳", "全室", ...allAreas.filter((area) => area !== "客廳")];
-  const estimateGroups = tradeOrder
-    .map((trade) => {
-      const rows = sortEstimateRowsByArea(estimateRows.filter((row) => row.trade === trade), estimateAreaOrder);
-      return {
-        trade,
-        rows,
-        subtotal: rows.reduce((sum, row) => addPair(sum, row.subtotal), pair())
-      };
-    })
-    .filter((group) => group.rows.length > 0);
+  const estimateGroups = groupEstimateRowsByArea(estimateRows, estimateAreaOrder);
   const totalRows = [
     ["稅前工程總額", grandTotal],
     ...(managementRate > 0 ? [[`監管費（${managementPercent}%）`, managementTotal]] : []),
@@ -769,7 +770,7 @@ function App() {
     ];
 
     estimateGroups.forEach((group) => {
-      tableRows.push(odsCellsRow([{ value: `工種：${group.trade}`, span: 6, style: "section" }]));
+      tableRows.push(odsCellsRow([{ value: `施工區域：${group.area}`, span: 6, style: "section" }]));
       group.rows.forEach((row) => {
         const cells = toEstimateDetailCells(row, `NT$ ${moneyRange(row.subtotal)}`);
         tableRows.push(odsCellsRow([
@@ -782,7 +783,7 @@ function App() {
         ]));
       });
       tableRows.push(odsCellsRow([
-        { value: `${group.trade} 小計`, span: 4, style: "subtotalLabel" },
+        { value: `${group.area} 小計`, span: 4, style: "subtotalLabel" },
         { value: `NT$ ${moneyRange(group.subtotal)}`, style: "subtotalAmount" },
         { value: "", style: "subtotal" }
       ]));
@@ -907,12 +908,12 @@ function App() {
     ];
 
     estimateGroups.forEach((group) => {
-      rows.push(`<tr>${htmlCell(`工種：${group.trade}`, "th", 'colspan="6" class="section"')}</tr>`);
+      rows.push(`<tr>${htmlCell(`施工區域：${group.area}`, "th", 'colspan="6" class="section"')}</tr>`);
       group.rows.forEach((row) => {
         const cells = toEstimateDetailCells(row, `NT$ ${moneyRange(row.subtotal)}`);
         rows.push(`<tr>${cells.map((value, index) => htmlCell(value, "td", index === 5 ? 'class="note item-note-output"' : "")).join("")}</tr>`);
       });
-      rows.push(`<tr>${htmlCell(`${group.trade} 小計`, "td", 'colspan="4" class="subtotal"')}${htmlCell(`NT$ ${moneyRange(group.subtotal)}`, "td", 'class="subtotal amount"')}${htmlCell("", "td", 'class="subtotal"')}</tr>`);
+      rows.push(`<tr>${htmlCell(`${group.area} 小計`, "td", 'colspan="4" class="subtotal"')}${htmlCell(`NT$ ${moneyRange(group.subtotal)}`, "td", 'class="subtotal amount"')}${htmlCell("", "td", 'class="subtotal"')}</tr>`);
     });
 
     [...totalRows, [finalTotalLabel, finalTotal]].forEach(([label, total]) => {
@@ -977,16 +978,16 @@ function App() {
         sheet.style.cssText = "box-sizing:border-box;width:794px;min-height:1123px;padding:34px;background:#fff;color:#252525;font-family:'Microsoft JhengHei','Noto Sans TC',Arial,sans-serif;display:flex;flex-direction:column;";
 
         const tableRows = pageGroups.flatMap((group) => {
-          const sectionTitle = `${group.trade}${group.continued ? "（續）" : ""}`;
+          const sectionTitle = `${group.area}${group.continued ? "（續）" : ""}`;
           const rows = [
-            `<tr class="trade"><td colspan="6">工種：${xmlEscape(sectionTitle)}</td></tr>`,
+            `<tr class="trade"><td colspan="6">施工區域：${xmlEscape(sectionTitle)}</td></tr>`,
             ...group.rows.map((row) => {
               const cells = toEstimateDetailCells(row, `NT$ ${moneyRange(row.subtotal)}`);
               return `<tr>${cells.map((value, index) => `<td class="${[3, 4].includes(index) ? "amount" : ""}">${xmlEscape(value)}</td>`).join("")}</tr>`;
             })
           ];
           if (group.showSubtotal) {
-            rows.push(`<tr class="subtotal"><td colspan="4">${xmlEscape(group.trade)} 小計</td><td class="amount">NT$ ${xmlEscape(moneyRange(group.subtotal))}</td><td></td></tr>`);
+            rows.push(`<tr class="subtotal"><td colspan="4">${xmlEscape(group.area)} 小計</td><td class="amount">NT$ ${xmlEscape(moneyRange(group.subtotal))}</td><td></td></tr>`);
           }
           return rows;
         }).join("");
@@ -1097,12 +1098,12 @@ function App() {
   };
 
   const detailText = [
-    "各工種估價明細",
+    "各區域估價明細",
     estimateDetailHeaders.join("｜"),
     ...estimateGroups.flatMap((group) => [
-      `工種：${group.trade}`,
+      `施工區域：${group.area}`,
       ...group.rows.map((row) => toEstimateDetailCells(row, `NT$ ${moneyRange(row.subtotal)}`).join("｜")),
-      [`${group.trade}小計`, "", "", "", `NT$ ${moneyRange(group.subtotal)}`, ""].join("｜")
+      [`${group.area}小計`, "", "", "", `NT$ ${moneyRange(group.subtotal)}`, ""].join("｜")
     ]),
     ...totalRows.map(([label, total]) => [label, "", "", "", `NT$ ${moneyRange(total)}`, ""].join("｜")),
     [finalTotalLabel, "", "", "", `NT$ ${moneyRange(finalTotal)}`, ""].join("｜")
@@ -1228,9 +1229,7 @@ function App() {
                               <Field label="數量">
                                 <input className={numberInputClass} type="number" min="0" value={row.qty} onChange={(e) => updateCabinet(row.id, { qty: editableNumber(e.target.value) })} />
                               </Field>
-                              <Field label="單位">
-                                <input className={numberInputClass} value={row.unit} onChange={(e) => updateCabinet(row.id, { unit: e.target.value })} />
-                              </Field>
+                              <UnitSelect value={row.unit} onChange={(unit) => updateCabinet(row.id, { unit })} />
                               <Field label="實際單價">
                                 <input className={numberInputClass} type="number" min="0" value={row.actualUnitPrice} placeholder="自行填入" onChange={(e) => updateCabinet(row.id, { actualUnitPrice: e.target.value })} />
                               </Field>
@@ -1292,9 +1291,7 @@ function App() {
                             <Field label="數量／尺寸">
                               <input className={numberInputClass} type="number" min="0" value={row.qty} onChange={(e) => updateWood(row.id, { qty: editableNumber(e.target.value) })} />
                             </Field>
-                            <Field label="單位">
-                              <input className={numberInputClass} value={row.unit} onChange={(e) => updateWood(row.id, { unit: e.target.value })} />
-                            </Field>
+                            <UnitSelect value={row.unit} onChange={(unit) => updateWood(row.id, { unit })} />
                             <Field label="實際單價">
                               <input className={numberInputClass} type="number" min="0" value={row.actualUnitPrice} placeholder="自行填入" onChange={(e) => updateWood(row.id, { actualUnitPrice: e.target.value })} />
                             </Field>
@@ -1329,9 +1326,7 @@ function App() {
                 <Field label="地板施工坪數">
                   <input className={numberInputPanelClass} type="number" min="0" value={floorPing} onChange={(e) => { setFloorPing(editableNumber(e.target.value)); setShowResult(false); }} />
                 </Field>
-                <Field label="單位">
-                  <input className={numberInputPanelClass} value={floorUnit} onChange={(e) => { setFloorUnit(e.target.value); setShowResult(false); }} />
-                </Field>
+                <UnitSelect className={numberInputPanelClass} value={floorUnit} onChange={(unit) => { setFloorUnit(unit); setShowResult(false); }} />
                 <Field label="實際單價">
                   <input className={numberInputPanelClass} type="number" min="0" value={floorActualUnitPrice} placeholder="自行填入" onChange={(e) => { setFloorActualUnitPrice(e.target.value); setShowResult(false); }} />
                 </Field>
@@ -1374,9 +1369,7 @@ function App() {
                       <Field label="數量">
                         <input className={numberInputClass} type="number" min="0" value={row.qty} onChange={(e) => updateMasonry(row.id, { qty: editableNumber(e.target.value) })} />
                       </Field>
-                      <Field label="單位">
-                        <input className={numberInputClass} value={row.unit} onChange={(e) => updateMasonry(row.id, { unit: e.target.value })} />
-                      </Field>
+                      <UnitSelect value={row.unit} onChange={(unit) => updateMasonry(row.id, { unit })} />
                       <Field label="實際單價">
                         <input className={numberInputClass} type="number" min="0" value={row.actualUnitPrice} placeholder="自行填入" onChange={(e) => updateMasonry(row.id, { actualUnitPrice: e.target.value })} />
                       </Field>
@@ -1409,9 +1402,7 @@ function App() {
                     <Field label="數量">
                       <input className={numberInputClass} type="number" min="0" value={row.qty} onChange={(e) => updateProtection(row.id, { qty: editableNumber(e.target.value) })} />
                     </Field>
-                    <Field label="單位">
-                      <input className="rounded-lg border border-coffee/20 px-3 py-2" value={row.unit} onChange={(e) => updateProtection(row.id, { unit: e.target.value })} />
-                    </Field>
+                    <UnitSelect className="rounded-lg border border-coffee/20 px-3 py-2" value={row.unit} onChange={(unit) => updateProtection(row.id, { unit })} />
                     <Field label="實際單價">
                       <input className={numberInputClass} type="number" min="0" value={row.actualUnitPrice} placeholder="自行填入" onChange={(e) => updateProtection(row.id, { actualUnitPrice: e.target.value })} />
                     </Field>
@@ -1436,9 +1427,7 @@ function App() {
                   <Field label="數量">
                     <input className={numberInputClass} type="number" min="0" value={cleanupQty} onChange={(e) => { setCleanupQty(editableNumber(e.target.value)); setShowResult(false); }} />
                   </Field>
-                  <Field label="單位">
-                    <input className="rounded-lg border border-coffee/20 px-3 py-2" value={cleanupUnit} onChange={(e) => { setCleanupUnit(e.target.value); setShowResult(false); }} />
-                  </Field>
+                  <UnitSelect className="rounded-lg border border-coffee/20 px-3 py-2" value={cleanupUnit} onChange={(unit) => { setCleanupUnit(unit); setShowResult(false); }} />
                   <Field label="實際單價">
                     <input className={numberInputClass} type="number" min="0" value={cleanupActualUnitPrice} placeholder="自行填入" onChange={(e) => { setCleanupActualUnitPrice(e.target.value); setShowResult(false); }} />
                   </Field>
@@ -1472,9 +1461,7 @@ function App() {
                       <Field label="數量">
                         <input className={numberInputClass} type="number" min="0" value={row.qty} onChange={(e) => updatePlumbingExtra(row.id, { qty: editableNumber(e.target.value) })} />
                       </Field>
-                      <Field label="單位">
-                        <input className={numberInputClass} value={row.unit} onChange={(e) => updatePlumbingExtra(row.id, { unit: e.target.value })} />
-                      </Field>
+                      <UnitSelect value={row.unit} onChange={(unit) => updatePlumbingExtra(row.id, { unit })} />
                       <Field label="實際單價">
                         <input className={numberInputClass} type="number" min="0" value={row.actualUnitPrice} placeholder="自行填入" onChange={(e) => updatePlumbingExtra(row.id, { actualUnitPrice: e.target.value })} />
                       </Field>
@@ -1514,9 +1501,7 @@ function App() {
                       <Field label="數量">
                         <input className={numberInputClass} type="number" min="0" value={row.qty} onChange={(e) => updatePaintingExtra(row.id, { qty: editableNumber(e.target.value) })} />
                       </Field>
-                      <Field label="單位">
-                        <input className={numberInputClass} value={row.unit} onChange={(e) => updatePaintingExtra(row.id, { unit: e.target.value })} />
-                      </Field>
+                      <UnitSelect value={row.unit} onChange={(unit) => updatePaintingExtra(row.id, { unit })} />
                       <Field label="實際單價">
                         <div className="grid gap-1">
                           <input className={numberInputClass} type="number" min="0" value={row.actualUnitPrice} placeholder="自行填入" onChange={(e) => updatePaintingExtra(row.id, { actualUnitPrice: e.target.value })} />
@@ -1564,9 +1549,7 @@ function App() {
                       <Field label="數量">
                         <input className={numberInputClass} type="number" min="0" value={row.qty} onChange={(e) => updateAirConditioning(row.id, { qty: editableNumber(e.target.value) })} />
                       </Field>
-                      <Field label="單位">
-                        <input className={numberInputClass} value={row.unit} onChange={(e) => updateAirConditioning(row.id, { unit: e.target.value })} />
-                      </Field>
+                      <UnitSelect value={row.unit} onChange={(unit) => updateAirConditioning(row.id, { unit })} />
                       <Field label="實際單價">
                         <input className={numberInputClass} type="number" min="0" value={row.actualUnitPrice} placeholder="自行填入" onChange={(e) => updateAirConditioning(row.id, { actualUnitPrice: e.target.value })} />
                       </Field>
@@ -1596,7 +1579,9 @@ function App() {
                   <tr>
                     <td><input aria-label="項目" placeholder="項目" value={row.name} onChange={(e) => updateCustomTrade(trade.id, {rows: trade.rows.map((item) => item.id === row.id ? {...item, name: e.target.value} : item)})} /></td>
                     <td><AreaSelect value={row.area} selectedAreas={selectedAreas} allAreas={allAreas} includeWhole allowCustom onChange={(area) => updateCustomTrade(trade.id, {rows: moveItemToArea(trade.rows, row.id, area)})} /></td>
-                    {[['qty', '數量', 'number'], ['unit', '單位', 'text'], ['price', '單價', 'number']].map(([key, label, type]) => <td key={key}><input aria-label={label} placeholder={key === 'price' ? '選填' : label} type={type} min={type === 'number' ? 0 : undefined} step={type === 'number' ? 'any' : undefined} value={row[key]} onChange={(e) => updateCustomTrade(trade.id, {rows: trade.rows.map((item) => item.id === row.id ? {...item, [key]: type === 'number' && e.target.value !== '' ? Math.max(0, Number(e.target.value)) : e.target.value} : item)})} /></td>)}
+                    <td><input aria-label="數量" placeholder="數量" type="number" min="0" step="any" value={row.qty} onChange={(e) => updateCustomTrade(trade.id, {rows: trade.rows.map((item) => item.id === row.id ? {...item, qty: e.target.value !== '' ? Math.max(0, Number(e.target.value)) : e.target.value} : item)})} /></td>
+                    <td><UnitSelect value={row.unit} onChange={(unit) => updateCustomTrade(trade.id, {rows: trade.rows.map((item) => item.id === row.id ? {...item, unit} : item)})} /></td>
+                    <td><input aria-label="單價" placeholder="選填" type="number" min="0" step="any" value={row.price} onChange={(e) => updateCustomTrade(trade.id, {rows: trade.rows.map((item) => item.id === row.id ? {...item, price: e.target.value !== '' ? Math.max(0, Number(e.target.value)) : e.target.value} : item)})} /></td>
                     <td className="custom-amount">{row.price === '' ? '未填單價' : moneyRange(actualPricedPair(row.qty, row.price))}</td>
                     <td><button title="刪除項目" aria-label="刪除項目" type="button" onClick={() => { if (window.confirm("確定刪除此項目？")) updateCustomTrade(trade.id, {rows: trade.rows.filter((item) => item.id !== row.id)}); }}>×</button></td>
                   </tr>
@@ -1687,7 +1672,7 @@ function App() {
 
           <div className="mt-5 overflow-x-auto rounded-lg border border-coffee/15 bg-white">
             <div className="border-b border-coffee/10 bg-wood/20 px-4 py-3">
-              <h3 className="text-lg font-black text-coffee">各工種估價明細</h3>
+              <h3 className="text-lg font-black text-coffee">各區域估價明細</h3>
               <p className="mt-1 text-sm text-stone-600">{comparisonSafeMode ? "防比價模式已啟用：所有項目統一以 1 式及該項總價列示。" : "依目前填寫內容產生，備註會顯示於各項目右側。"}</p>
             </div>
             <table className="estimate-detail-desktop hidden md:table print:table w-full min-w-[980px] table-fixed border-collapse text-sm">
@@ -1706,13 +1691,13 @@ function App() {
               </thead>
               <tbody>
                 {estimateGroups.map((group) => (
-                  <React.Fragment key={group.trade}>
+                  <React.Fragment key={group.area}>
                     <tr className="bg-wood/25">
-                      <td className="border-b border-coffee/10 px-3 py-2.5 font-black text-coffee" colSpan="6">工種：{group.trade}</td>
+                      <td className="border-b border-coffee/10 px-3 py-2.5 font-black text-coffee" colSpan="6">施工區域：{group.area}</td>
                     </tr>
                     {group.rows.map((row, index) => (
                       <tr key={`${row.trade}-${row.name}-${index}`} className="odd:bg-white even:bg-creamSoft">
-                        <td className="break-words border-b border-coffee/10 px-3 py-2.5 text-stone-800">{row.area && row.area !== "-" ? `${row.area}｜${row.name}` : row.name}</td>
+                        <td className="break-words border-b border-coffee/10 px-3 py-2.5 text-stone-800">{row.trade ? `${row.trade}｜${row.name}` : row.name}</td>
                         <td className="border-b border-coffee/10 px-3 py-2.5 text-right text-stone-700">{row.qty}</td>
                         <td className="border-b border-coffee/10 px-3 py-2.5 text-stone-700">{row.unit}</td>
                         <td className="border-b border-coffee/10 px-3 py-2.5 text-right text-stone-700">{row.unitPrice}</td>
@@ -1721,7 +1706,7 @@ function App() {
                       </tr>
                     ))}
                     <tr className="bg-cream">
-                      <td className="border-b border-coffee/10 px-3 py-2.5 text-right font-black text-coffee" colSpan="4">{group.trade} 小計</td>
+                      <td className="border-b border-coffee/10 px-3 py-2.5 text-right font-black text-coffee" colSpan="4">{group.area} 小計</td>
                       <td className="border-b border-coffee/10 px-3 py-2.5 text-right font-black text-coffee">NT$ {moneyRange(group.subtotal)}</td>
                       <td className="border-b border-coffee/10 px-3 py-2.5"></td>
                     </tr>
@@ -1757,14 +1742,14 @@ function App() {
             </table>
             <div className="estimate-detail-mobile md:hidden print:hidden">
               {estimateGroups.map((group) => (
-                <section key={`mobile-${group.trade}`} className="border-b border-coffee/15 last:border-b-0">
-                  <h4 className="bg-wood/25 px-4 py-3 font-black text-coffee">工種：{group.trade}</h4>
+                <section key={`mobile-${group.area}`} className="border-b border-coffee/15 last:border-b-0">
+                  <h4 className="bg-wood/25 px-4 py-3 font-black text-coffee">施工區域：{group.area}</h4>
                   {group.rows.map((row, index) => (
                     <article key={`mobile-${row.trade}-${row.name}-${index}`} className="border-b border-coffee/10 px-4 py-3 last:border-b-0">
                       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
                         <div>
                           <div className="text-xs font-bold text-stone-500">項目</div>
-                          <div className="mt-1 break-words font-bold text-stone-800">{row.area && row.area !== "-" ? `${row.area}｜${row.name}` : row.name}</div>
+                          <div className="mt-1 break-words font-bold text-stone-800">{row.trade ? `${row.trade}｜${row.name}` : row.name}</div>
                         </div>
                         <div className="text-right">
                           <div className="text-xs font-bold text-stone-500">單項總價</div>
@@ -1784,7 +1769,7 @@ function App() {
                     </article>
                   ))}
                   <div className="flex items-center justify-between gap-3 bg-cream px-4 py-3 font-black text-coffee">
-                    <span>{group.trade} 小計</span>
+                    <span>{group.area} 小計</span>
                     <span>NT$ {moneyRange(group.subtotal)}</span>
                   </div>
                 </section>

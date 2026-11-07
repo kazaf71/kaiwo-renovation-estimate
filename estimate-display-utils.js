@@ -50,8 +50,25 @@
       .map(({ row }) => row);
   };
 
+  const groupEstimateRowsByArea = (rows, areaOrder = []) => {
+    const sortedRows = sortEstimateRowsByArea(rows, areaOrder);
+    const groups = [];
+    sortedRows.forEach((row) => {
+      const area = String(row.area || "未填區域").trim() || "未填區域";
+      let group = groups[groups.length - 1];
+      if (!group || group.area !== area) {
+        group = { area, rows: [], subtotal: { low: 0, high: 0 } };
+        groups.push(group);
+      }
+      group.rows.push(row);
+      group.subtotal.low += Number(row.subtotal?.low || 0);
+      group.subtotal.high += Number(row.subtotal?.high || 0);
+    });
+    return groups;
+  };
+
   const toEstimateDetailCells = (row, subtotalText) => {
-    const itemName = row.area && row.area !== "-" ? `${row.area}｜${row.name}` : row.name;
+    const itemName = row.trade ? `${row.trade}｜${row.name}` : row.name;
     return [itemName, row.qty, row.unit, row.unitPrice, subtotalText, String(row.note || "").trim()];
   };
 
@@ -70,6 +87,7 @@
     estimateOdsColumnWidths,
     formatCabinetQuantity,
     formatProjectLocation,
+    groupEstimateRowsByArea,
     isPricedItem,
     sortEstimateRowsByArea,
     toEstimateDetailCells,
