@@ -3,7 +3,7 @@ const pricing = JSON.parse(document.querySelector("#pricing-data").textContent);
 const { cleanNote, noteLine } = window.KaiwoNotes;
 const { editableNumber, editableText, editableUnit } = window.KaiwoEditableText;
 const { unitChoices } = window.KaiwoUnits;
-const { isItemEnabled, enabledRows, enabledSubtotal } = window.KaiwoItemEnabled;
+const { isItemEnabled, enabledRows, enabledSubtotal, mergeImportedDraft } = window.KaiwoItemEnabled;
 const { migrateFloorRows, updateFloorRow, removeFloorRow } = window.KaiwoFlooringRows;
 const { areaChoices, moveItemToArea, migrateProtectionRows, updateProtectionRow, removeProtectionRow } = window.KaiwoAreas;
 const {
@@ -73,7 +73,7 @@ async function importDraft(event) {
     }
     if (!Object.keys(clean).length) throw new Error();
     if (!window.confirm("載入草稿會取代目前內容，確定載入？")) return;
-    localStorage.setItem(draftKey, JSON.stringify({...savedDraft, ...clean})); location.reload();
+    localStorage.setItem(draftKey, JSON.stringify(mergeImportedDraft(savedDraft, clean))); location.reload();
   } catch (_) { window.alert("無法載入，請選擇本試用版下載的草稿 JSON 檔案。"); }
   event.target.value = "";
 }
@@ -1593,7 +1593,7 @@ function App() {
                     <td><input aria-label="數量" placeholder="數量" type="number" min="0" step="any" value={row.qty} onChange={(e) => updateCustomTrade(trade.id, {rows: trade.rows.map((item) => item.id === row.id ? {...item, qty: e.target.value !== '' ? Math.max(0, Number(e.target.value)) : e.target.value} : item)})} /></td>
                     <td><UnitSelect value={row.unit} onChange={(unit) => updateCustomTrade(trade.id, {rows: trade.rows.map((item) => item.id === row.id ? {...item, unit} : item)})} /></td>
                     <td><input aria-label="單價" placeholder="選填" type="number" min="0" step="any" value={row.price} onChange={(e) => updateCustomTrade(trade.id, {rows: trade.rows.map((item) => item.id === row.id ? {...item, price: e.target.value !== '' ? Math.max(0, Number(e.target.value)) : e.target.value} : item)})} /></td>
-                    <td className="custom-amount">{row.price === '' ? '未填單價' : moneyRange(actualPricedPair(row.qty, row.price))}</td>
+                    <td className="custom-amount">{row.price === '' ? '未填單價' : moneyRange(enabledSubtotal(row, actualPricedPair(row.qty, row.price), pair()))}</td>
                     <td><button title="刪除項目" aria-label="刪除項目" type="button" onClick={() => { if (window.confirm("確定刪除此項目？")) updateCustomTrade(trade.id, {rows: trade.rows.filter((item) => item.id !== row.id)}); }}>×</button></td>
                   </tr>
                   <tr className={`custom-note-row ${isItemEnabled(row) ? "" : "item-paused"}`}>

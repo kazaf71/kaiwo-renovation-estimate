@@ -21,3 +21,7 @@ test("paused item styling keeps entered fields editable", () => {
   assert.match(app, /isItemEnabled\(row\) \? "" : "item-paused"/);
   assert.doesNotMatch(app, /disabled=\{!isItemEnabled\(row\)\}/);
 });
+
+test("disabled custom rows display a zero line amount", () => {
+  assert.match(app, /custom-amount[\s\S]*?enabledSubtotal\(row, actualPricedPair\(row\.qty, row\.price\), pair\(\)\)/);
+});

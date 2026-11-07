@@ -6,5 +6,10 @@
   const isItemEnabled = (row) => row?.enabled !== false;
   const enabledRows = (rows) => rows.filter(isItemEnabled);
   const enabledSubtotal = (row, subtotal, emptySubtotal) => isItemEnabled(row) ? subtotal : emptySubtotal;
-  return { isItemEnabled, enabledRows, enabledSubtotal };
+  const mergeImportedDraft = (currentDraft, importedDraft) => {
+    const merged = { ...currentDraft, ...importedDraft };
+    if (!Object.hasOwn(importedDraft, "cleanupEnabled")) merged.cleanupEnabled = true;
+    return merged;
+  };
+  return { isItemEnabled, enabledRows, enabledSubtotal, mergeImportedDraft };
 });
