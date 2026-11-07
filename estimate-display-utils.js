@@ -67,6 +67,37 @@
     return groups;
   };
 
+  const groupEstimateRowsByTradeAndArea = (rows, tradeOrder = [], areaOrder = []) => {
+    const tradeRank = new Map(tradeOrder.map((trade, index) => [trade, index]));
+    const tradeGroups = [];
+    const tradeMap = new Map();
+
+    rows.forEach((row) => {
+      const trade = String(row.trade || "未填工種").trim() || "未填工種";
+      if (!tradeMap.has(trade)) {
+        const group = { trade, rows: [], firstIndex: tradeGroups.length };
+        tradeMap.set(trade, group);
+        tradeGroups.push(group);
+      }
+      tradeMap.get(trade).rows.push(row);
+    });
+
+    return tradeGroups
+      .sort((left, right) => {
+        const leftRank = tradeRank.has(left.trade) ? tradeRank.get(left.trade) : Number.MAX_SAFE_INTEGER;
+        const rightRank = tradeRank.has(right.trade) ? tradeRank.get(right.trade) : Number.MAX_SAFE_INTEGER;
+        return leftRank - rightRank || left.firstIndex - right.firstIndex;
+      })
+      .map(({ trade, rows: tradeRows }) => {
+        const areas = groupEstimateRowsByArea(tradeRows, areaOrder);
+        const subtotal = areas.reduce((sum, area) => ({
+          low: sum.low + Number(area.subtotal.low || 0),
+          high: sum.high + Number(area.subtotal.high || 0)
+        }), { low: 0, high: 0 });
+        return { trade, areas, subtotal };
+      });
+  };
+
   const toEstimateDetailCells = (row, subtotalText) => {
     const itemName = row.trade ? `${row.trade}｜${row.name}` : row.name;
     return [itemName, row.qty, row.unit, row.unitPrice, subtotalText, String(row.note || "").trim()];
@@ -87,6 +118,7 @@
     estimateOdsColumnWidths,
     formatCabinetQuantity,
     formatProjectLocation,
+    groupEstimateRowsByTradeAndArea,
     groupEstimateRowsByArea,
     isPricedItem,
     sortEstimateRowsByArea,

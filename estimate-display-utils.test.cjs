@@ -9,6 +9,7 @@ const {
   estimateOdsColumnWidths,
   formatCabinetQuantity,
   formatProjectLocation,
+  groupEstimateRowsByTradeAndArea,
   groupEstimateRowsByArea,
   isPricedItem,
   sortEstimateRowsByArea,
@@ -43,18 +44,31 @@ test("estimate rows keep each area together with the living room first", () => {
   );
 });
 
-test("estimate groups use area as the primary section across all trades", () => {
+test("estimate groups separate trades before grouping their areas", () => {
   const rows = [
-    { trade: "木作工程", area: "主臥室", subtotal: { low: 100, high: 100 } },
-    { trade: "水電工程", area: "客廳", subtotal: { low: 200, high: 200 } },
-    { trade: "油漆工程", area: "主臥室", subtotal: { low: 300, high: 300 } },
-    { trade: "木作工程", area: "客廳", subtotal: { low: 400, high: 400 } }
+    { id: "wood-main-1", trade: "木作工程", area: "主臥室", subtotal: { low: 100, high: 110 } },
+    { id: "plumbing-living", trade: "水電工程", area: "客廳", subtotal: { low: 200, high: 220 } },
+    { id: "paint-main", trade: "油漆工程", area: "主臥室", subtotal: { low: 300, high: 330 } },
+    { id: "wood-living", trade: "木作工程", area: "客廳", subtotal: { low: 400, high: 440 } },
+    { id: "wood-main-2", trade: "木作工程", area: "主臥室", subtotal: { low: 50, high: 55 } },
+    { id: "glass-custom", trade: "玻璃工程", area: "露台", subtotal: { low: 700, high: 770 } },
+    { id: "glass-living", trade: "玻璃工程", area: "客廳", subtotal: { low: 80, high: 88 } }
   ];
-  const groups = groupEstimateRowsByArea(rows, ["客廳", "主臥室"]);
-  assert.deepEqual(groups.map((group) => group.area), ["客廳", "主臥室"]);
-  assert.deepEqual(groups[0].rows.map((row) => row.trade), ["水電工程", "木作工程"]);
-  assert.deepEqual(groups[0].subtotal, { low: 600, high: 600 });
-  assert.deepEqual(groups[1].subtotal, { low: 400, high: 400 });
+  const groups = groupEstimateRowsByTradeAndArea(
+    rows,
+    ["木作工程", "水電工程", "油漆工程"],
+    ["客廳", "全室", "主臥室"]
+  );
+
+  assert.deepEqual(groups.map((group) => group.trade), ["木作工程", "水電工程", "油漆工程", "玻璃工程"]);
+  assert.deepEqual(groups[0].areas.map((group) => group.area), ["客廳", "主臥室"]);
+  assert.deepEqual(groups[0].areas[1].rows.map((row) => row.id), ["wood-main-1", "wood-main-2"]);
+  assert.deepEqual(groups[0].areas[0].subtotal, { low: 400, high: 440 });
+  assert.deepEqual(groups[0].areas[1].subtotal, { low: 150, high: 165 });
+  assert.deepEqual(groups[0].subtotal, { low: 550, high: 605 });
+  assert.deepEqual(groups[3].areas.map((group) => group.area), ["客廳", "露台"]);
+  assert.deepEqual(groups[3].subtotal, { low: 780, high: 858 });
+  assert.deepEqual(groupEstimateRowsByTradeAndArea([], [], []), []);
 });
 
 test("payment stages are consecutively numbered after blanks and deletions", () => {
