@@ -12,6 +12,6 @@ test("flooring keeps one combined price suggestion without grade selection", () 
 });
 
 test("flooring still uses only the manually entered actual price", () => {
-  assert.match(app, /const flooringTotal = floorNeeded \? actualPricedPair\(floorPing, floorActualUnitPrice\) : pair\(\);/);
-  assert.match(app, /value=\{floorActualUnitPrice\}/);
+  assert.match(app, /subtotal: actualPricedPair\(row\.qty, row\.actualUnitPrice\)/);
+  assert.match(app, /value=\{row\.actualUnitPrice\}/);
 });

@@ -3,6 +3,7 @@ const pricing = JSON.parse(document.querySelector("#pricing-data").textContent);
 const { cleanNote, noteLine } = window.KaiwoNotes;
 const { editableNumber, editableText, editableUnit } = window.KaiwoEditableText;
 const { unitChoices } = window.KaiwoUnits;
+const { migrateFloorRows, updateFloorRow, removeFloorRow } = window.KaiwoFlooringRows;
 const { areaChoices, moveItemToArea, migrateProtectionRows, updateProtectionRow, removeProtectionRow } = window.KaiwoAreas;
 const {
   buildPaymentLines,
@@ -266,13 +267,7 @@ function App() {
     setAreaMessage(allAreas.includes(name) ? `已選取「${name}」` : `已新增並選取「${name}」`);
     setShowResult(false);
   };
-  const [floorArea, setFloorArea] = useDraftState("floorArea", "全室");
-  const [floorPing, setFloorPing] = useDraftState("floorPing", 18);
-  const [floorText, setFloorText] = useDraftState("floorText", "地板工程");
-  const [floorNote, setFloorNote] = useDraftState("floorNote", "");
-  const [floorUnit, setFloorUnit] = useDraftState("floorUnit", "坪");
-  const [floorActualUnitPrice, setFloorActualUnitPrice] = useDraftState("floorActualUnitPrice", "");
-  const floorNeeded = fixedNumber(floorActualUnitPrice) !== null && Number(floorPing) > 0;
+  const [floorRows, setFloorRows] = useDraftState("floorRows", migrateFloorRows(savedDraft, () => crypto.randomUUID()));
   const [protectionRows, setProtectionRows] = useDraftState("protectionRows", migrateProtectionRows(savedDraft, () => crypto.randomUUID()));
   const [cleanupArea, setCleanupArea] = useDraftState("cleanupArea", "全室");
   const [cleanupText, setCleanupText] = useDraftState("cleanupText", "清運廢棄物工程");
@@ -342,7 +337,11 @@ function App() {
 
   const cabinetTotal = cabinetTotals.reduce((sum, row) => addPair(sum, row.subtotal), pair());
   const woodTotal = woodTotals.reduce((sum, row) => addPair(sum, row.subtotal), pair());
-  const flooringTotal = floorNeeded ? actualPricedPair(floorPing, floorActualUnitPrice) : pair();
+  const flooringTotals = floorRows.map((row) => ({
+    ...row,
+    subtotal: actualPricedPair(row.qty, row.actualUnitPrice)
+  }));
+  const flooringTotal = flooringTotals.reduce((sum, row) => addPair(sum, row.subtotal), pair());
   const plumbingExtraTotals = plumbingExtras.map((row) => ({
     ...row,
     item: plumbingItemMap[row.itemId] || pricing.plumbingExtraItems[0],
@@ -397,6 +396,19 @@ function App() {
 
   const updateWood = (id, patch) => {
     setWoodRows((rows) => rows.map((row) => (row.id === id ? { ...row, ...patch } : row)));
+    setShowResult(false);
+  };
+
+  const updateFloor = (id, patch) => {
+    setFloorRows((rows) => updateFloorRow(rows, id, patch));
+    setShowResult(false);
+  };
+
+  const addFloor = () => {
+    setFloorRows((rows) => [...rows, {
+      id: crypto.randomUUID(), area: selectedAreas[0] || "全室", customText: "地板工程",
+      qty: "", unit: "坪", actualUnitPrice: "", note: ""
+    }]);
     setShowResult(false);
   };
 
@@ -516,7 +528,7 @@ function App() {
     ...customTrades.flatMap((trade) => trade.rows.map((row) => cleanNote(row.note) ? `- ${trade.name.trim() || "自訂工程"}｜${row.area || "全室"}｜${row.name.trim() || "未命名項目"}：${cleanNote(row.note)}` : "")),
     ...cabinetTotals.map((row) => cleanNote(row.note) ? `- 櫃體工程｜${row.area}｜${row.customText}：${cleanNote(row.note)}` : ""),
     ...woodTotals.map((row) => cleanNote(row.note) ? `- 木作工程｜${row.area}｜${row.customText}：${cleanNote(row.note)}` : ""),
-    floorNeeded && cleanNote(floorNote) ? `- 地板工程｜${floorArea}｜${floorText}：${cleanNote(floorNote)}` : "",
+    ...flooringTotals.map((row) => hasAmount(row.subtotal) && cleanNote(row.note) ? `- 地板工程｜${row.area}｜${row.customText}：${cleanNote(row.note)}` : ""),
     ...masonryTotals.map((row) => hasAmount(row.subtotal) && cleanNote(row.note) ? `- 土水工程｜${row.area}｜${row.customText}：${cleanNote(row.note)}` : ""),
     ...protectionTotals.map((row) => hasAmount(row.subtotal) && cleanNote(row.note) ? `- 保護工程｜${row.area || "未填區域"}｜${row.customText || "保護工程"}：${cleanNote(row.note)}` : ""),
     hasAmount(cleanupTotal) && cleanNote(cleanupNote) ? `- 清運廢棄物工程｜${cleanupArea}｜${cleanupText}：${cleanNote(cleanupNote)}` : "",
@@ -540,7 +552,7 @@ function App() {
       ``,
       ...(hasAmount(cabinetTotal) ? [`櫃體工程：NT$ ${moneyRange(cabinetTotal)}`] : []),
       ...(hasAmount(woodTotal) ? [`木作工程：NT$ ${moneyRange(woodTotal)}`] : []),
-      ...(floorNeeded && hasAmount(flooringTotal) ? [`地板工程：NT$ ${moneyRange(flooringTotal)}`] : []),
+      ...(hasAmount(flooringTotal) ? [`地板工程：NT$ ${moneyRange(flooringTotal)}`] : []),
       ...(hasAmount(masonryTotal) ? [`土水工程：NT$ ${moneyRange(masonryTotal)}`] : []),
       ...masonryTotals.filter((row) => hasAmount(row.subtotal)).map(summaryItemLine),
       ...(hasAmount(protectionTotal) ? [`保護工程：NT$ ${moneyRange(protectionTotal)}`] : []),
@@ -564,7 +576,7 @@ function App() {
       `免責說明：此為線上初估金額，實際報價仍需依現場丈量、材質選擇、施工條件與圖面內容為準。`
     ];
     return lines.join("\n");
-  }, [completionDate, paymentStages, summaryTitle, projectLocationText, customTrades, selectedAreas, cabinetTotal, woodTotal, floorNeeded, flooringTotal, masonryTotal, masonryTotals, protectionTotal, protectionRows, cleanupTotal, cleanupText, cleanupQty, cleanupUnit, cleanupActualUnitPrice, plumbingExtraTotal, plumbingTotal, plumbingExtraTotals, paintingExtraTotal, paintingTotal, paintingExtraTotals, airConditioningTotal, airConditioningTotals, estimateNoteText, comparisonSafeMode, grandTotal, managementRate, managementPercent, managementTotal, invoiceNeeded, invoiceTotal, finalTotal]);
+  }, [completionDate, paymentStages, summaryTitle, projectLocationText, customTrades, selectedAreas, cabinetTotal, woodTotal, flooringTotal, flooringTotals, masonryTotal, masonryTotals, protectionTotal, protectionRows, cleanupTotal, cleanupText, cleanupQty, cleanupUnit, cleanupActualUnitPrice, plumbingExtraTotal, plumbingTotal, plumbingExtraTotals, paintingExtraTotal, paintingTotal, paintingExtraTotals, airConditioningTotal, airConditioningTotals, estimateNoteText, comparisonSafeMode, grandTotal, managementRate, managementPercent, managementTotal, invoiceNeeded, invoiceTotal, finalTotal]);
 
   const rawEstimateRows = [
     ...customTrades.flatMap((trade) => trade.rows.map((row) => ({trade: trade.name.trim() || "自訂工程", area: row.area || "全室", name: row.name.trim() || "未命名項目", note: row.note || "", qty: row.qty, unit: row.unit, unitPrice: actualUnitPriceText(row.price), subtotal: actualPricedPair(row.qty, row.price)}))),
@@ -588,16 +600,16 @@ function App() {
       unitPrice: actualUnitPriceText(row.actualUnitPrice),
       subtotal: row.subtotal
     })),
-    ...(floorNeeded ? [{
+    ...flooringTotals.filter((row) => isPricedItem(row.qty, row.actualUnitPrice)).map((row) => ({
       trade: "地板工程",
-      area: floorArea,
-      name: floorText,
-      note: floorNote,
-      qty: floorPing,
-      unit: floorUnit,
-      unitPrice: actualUnitPriceText(floorActualUnitPrice),
-      subtotal: flooringTotal
-    }] : []),
+      area: row.area,
+      name: row.customText,
+      note: row.note || "",
+      qty: row.qty,
+      unit: row.unit,
+      unitPrice: actualUnitPriceText(row.actualUnitPrice),
+      subtotal: row.subtotal
+    })),
     ...masonryTotals.filter((row) => isPricedItem(row.qty, row.actualUnitPrice)).map((row) => ({
       trade: "土水工程",
       area: row.area,
@@ -1280,26 +1292,31 @@ function App() {
           </Card>
 
           <Card title="地板工程" defaultOpen={false}>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="grid gap-3">
-                <AreaSelect value={floorArea} selectedAreas={selectedAreas} allAreas={allAreas} includeWhole allowCustom onChange={(area) => { setFloorArea(area); setShowResult(false); }} />
-                <Field label="項目文字">
-                  <input className={fullTextInputClass} value={floorText} onChange={(e) => { setFloorText(e.target.value); setShowResult(false); }} />
-                </Field>
-                <Field label="地板施工坪數">
-                  <input className={numberInputPanelClass} type="number" min="0" value={floorPing} onChange={(e) => { setFloorPing(editableNumber(e.target.value)); setShowResult(false); }} />
-                </Field>
-                <UnitSelect className={numberInputPanelClass} value={floorUnit} onChange={(unit) => { setFloorUnit(unit); setShowResult(false); }} />
-                <Field label="實際單價">
-                  <input className={numberInputPanelClass} type="number" min="0" value={floorActualUnitPrice} placeholder="自行填入" onChange={(e) => { setFloorActualUnitPrice(e.target.value); setShowResult(false); }} />
-                </Field>
-                <NoteField value={floorNote} onChange={(note) => { setFloorNote(note); setShowResult(false); }} />
+            <div className="grid gap-4">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="text-sm leading-7 text-stone-700">價位建議：{moneyRange(floorReference)}／坪　地板工程小計：<b>NT$ {moneyRange(flooringTotal)}</b></div>
+                <button className="rounded-lg border border-coffee/20 bg-wood/25 px-4 py-2 text-sm font-black text-coffee" type="button" onClick={addFloor}>新增地板區域</button>
               </div>
-              <div className="rounded-lg bg-white p-4 text-sm leading-7 text-stone-700">
-                <div>價位建議：{moneyRange(floorReference)}／坪</div>
-                <div>實際單價：{actualUnitPriceText(floorActualUnitPrice)}／{floorUnit}</div>
-                <div>目前小計：NT$ {moneyRange(flooringTotal)}</div>
-              </div>
+              {flooringTotals.map((row) => (
+                <div key={row.id} className="rounded-lg border border-coffee/10 bg-white p-4">
+                  <div className="grid gap-3 md:grid-cols-[130px_1fr_100px_90px_120px_auto] md:items-end">
+                    <AreaSelect value={row.area} selectedAreas={selectedAreas} allAreas={allAreas} includeWhole allowCustom onChange={(area) => updateFloor(row.id, { area })} />
+                    <Field label="項目文字">
+                      <input className={fullTextInputClass} value={row.customText} onChange={(event) => updateFloor(row.id, { customText: event.target.value })} />
+                    </Field>
+                    <Field label="數量／坪數">
+                      <input className={numberInputPanelClass} type="number" min="0" value={row.qty} onChange={(event) => updateFloor(row.id, { qty: editableNumber(event.target.value) })} />
+                    </Field>
+                    <UnitSelect className={numberInputPanelClass} value={row.unit} onChange={(unit) => updateFloor(row.id, { unit })} />
+                    <Field label="實際單價">
+                      <input className={numberInputPanelClass} type="number" min="0" value={row.actualUnitPrice} placeholder="自行填入" onChange={(event) => updateFloor(row.id, { actualUnitPrice: event.target.value })} />
+                    </Field>
+                    <button className="rounded-lg border border-red-200 px-3 py-2 text-sm font-bold text-red-700" type="button" onClick={() => { if (window.confirm("確定刪除此地板區域？")) { setFloorRows((rows) => removeFloorRow(rows, row.id)); setShowResult(false); } }}>刪除</button>
+                  </div>
+                  <div className="mt-3 rounded-lg bg-cream px-3 py-3 text-sm text-stone-700">目前小計：<b>NT$ {moneyRange(row.subtotal)}</b></div>
+                  <NoteField value={row.note} onChange={(note) => updateFloor(row.id, { note })} />
+                </div>
+              ))}
             </div>
           </Card>
 
