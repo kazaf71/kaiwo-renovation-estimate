@@ -8,6 +8,7 @@ const {
   estimateDetailHeaders,
   estimateOdsColumnWidths,
   formatCabinetQuantity,
+  formatEstimateItemName,
   formatProjectLocation,
   groupEstimateRowsByTradeAndArea,
   groupEstimateRowsByArea,
@@ -243,10 +244,10 @@ test("published app includes one-click PDF assets and control", () => {
   const worker = fs.readFileSync("./sw.js", "utf8");
   const appSource = fs.readFileSync("./app.jsx", "utf8");
 
-  assert.match(index, /pdf-export-utils\.js\?v=6/);
+  assert.match(index, /pdf-export-utils\.js\?v=7/);
   assert.match(index, /html2canvas\.min\.js/);
   assert.match(index, /jspdf\.umd\.min\.js/);
-  assert.match(worker, /pdf-export-utils\.js\?v=6/);
+  assert.match(worker, /pdf-export-utils\.js\?v=7/);
   assert.match(worker, /html2canvas\.min\.js/);
   assert.match(worker, /jspdf\.umd\.min\.js/);
   assert.match(appSource, /下載 PDF/);
@@ -261,4 +262,8 @@ test("formal PDF fills the first page and uses a compact continuation header", (
   assert.match(appSource, /continuation-head/);
   assert.match(appSource, /formalTitle.*（續）/);
   assert.match(appSource, /第 \$\{pageIndex \+ 1\} \/ \$\{pages\.length\} 頁/);
+});
+test("estimate item labels show the area before the item name", () => {
+  assert.equal(formatEstimateItemName("客廳", "平釘天花板"), "客廳｜平釘天花板");
+  assert.equal(formatEstimateItemName("主臥室", "窗簾盒"), "主臥室｜窗簾盒");
 });

@@ -123,7 +123,7 @@
         const rows = Array.from(child.tBodies[0].rows);
         for (let i = 0; i < rows.length; i++) {
           const group = [rows[i]];
-          if (rows[i].matches(".trade") && rows[i + 1]?.matches(".area")) group.push(rows[++i]);
+          if (rows[i].matches(".trade") && rows[i + 1]) group.push(rows[++i]);
           if (rows[i].matches(".area") && rows[i + 1]) group.push(rows[++i]);
           units.push({ table: child, rows: group });
         }

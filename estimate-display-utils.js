@@ -98,6 +98,8 @@
       });
   };
 
+  const formatEstimateItemName = (area, name) => `${area}｜${name}`;
+
   const toEstimateDetailCells = (row, subtotalText) => {
     return [row.name, row.qty, row.unit, row.unitPrice, subtotalText, String(row.note || "").trim()];
   };
@@ -116,6 +118,7 @@
     estimateDetailHeaders,
     estimateOdsColumnWidths,
     formatCabinetQuantity,
+    formatEstimateItemName,
     formatProjectLocation,
     groupEstimateRowsByTradeAndArea,
     groupEstimateRowsByArea,

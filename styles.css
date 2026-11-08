@@ -195,3 +195,18 @@ summary::-webkit-details-marker { display: none; }
   .estimate-layout { display: block; }
   .trade-nav { display: none; }
 }
+
+.estimate-detail { background-color: #fff; }
+
+.trial-workspace .estimate-detail .text-white,
+.trial-workspace .estimate-detail .text-white * { color: #fff !important; }
+
+.estimate-detail-desktop :is(th, td) {
+  border: 1px solid #b8b8b8;
+  overflow-wrap: anywhere;
+  vertical-align: top;
+}
+
+@media print {
+  .estimate-detail { print-color-adjust: exact; }
+}

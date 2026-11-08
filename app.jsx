@@ -13,6 +13,7 @@ const {
   estimateDetailHeaders,
   estimateOdsColumnWidths,
   formatCabinetQuantity,
+  formatEstimateItemName,
   formatProjectLocation,
   groupEstimateRowsByTradeAndArea,
   isPricedItem,
@@ -1009,12 +1010,11 @@ function App() {
         const tableRows = pageGroups.flatMap((tradeGroup) => {
           const rows = [`<tr class="trade"><td colspan="6">工種：${xmlEscape(tradeGroup.trade)}</td></tr>`];
           tradeGroup.areas.forEach((areaGroup) => {
-            rows.push(`<tr class="area"><td colspan="6">施工區域：${xmlEscape(areaGroup.area)}</td></tr>`);
             areaGroup.rows.forEach((row) => {
-              const cells = toEstimateDetailCells(row, `NT$ ${moneyRange(row.subtotal)}`);
+              const item = { ...row, name: formatEstimateItemName(areaGroup.area, row.name) };
+              const cells = toEstimateDetailCells(item, `NT$ ${moneyRange(row.subtotal)}`);
               rows.push(`<tr>${cells.map((value, index) => `<td class="${[3, 4].includes(index) ? "amount" : ""}">${xmlEscape(value)}</td>`).join("")}</tr>`);
             });
-            rows.push(`<tr class="subtotal"><td colspan="4">${xmlEscape(areaGroup.area)} 小計</td><td class="amount">NT$ ${xmlEscape(moneyRange(areaGroup.subtotal))}</td><td></td></tr>`);
           });
           rows.push(`<tr class="trade-subtotal"><td colspan="4">${xmlEscape(tradeGroup.trade)} 小計</td><td class="amount">NT$ ${xmlEscape(moneyRange(tradeGroup.subtotal))}</td><td></td></tr>`);
           return rows;
@@ -1061,10 +1061,8 @@ function App() {
             .detail { width: 100%; border-collapse: collapse; table-layout: fixed; }
             .detail th, .detail td { border: 1px solid #b8b8b8; padding: 6px; font-size: 10px; line-height: 1.35; vertical-align: top; word-break: break-word; }
             .detail thead th { background: #3f3f3f; color: #fff; text-align: left; }
-            .detail .trade td { background: #bfa88e; font-weight: 900; color: #111; }
-            .detail .area td { background: #e5ded5; font-weight: 800; color: #222; }
-            .detail .subtotal td { background: #ededed; font-weight: 800; text-align: right; }
-            .detail .trade-subtotal td { background: #d8c7b3; font-weight: 900; text-align: right; }
+            .detail .trade td { background: #d4d4d4; font-weight: 900; color: #111; }
+            .detail .trade-subtotal td { background: #ededed; font-weight: 900; text-align: right; }
             .detail .amount { text-align: right; font-weight: 700; }
             .empty { border: 1px solid #bbb; padding: 24px; text-align: center; color: #666; font-size: 12px; }
             .totals { width: 100%; margin-top: 15px; border-collapse: collapse; }
@@ -1132,11 +1130,10 @@ function App() {
     estimateDetailHeaders.join("｜"),
     ...estimateTradeGroups.flatMap((tradeGroup) => [
       `工種：${tradeGroup.trade}`,
-      ...tradeGroup.areas.flatMap((areaGroup) => [
-        `施工區域：${areaGroup.area}`,
-        ...areaGroup.rows.map((row) => toEstimateDetailCells(row, `NT$ ${moneyRange(row.subtotal)}`).join("｜")),
-        [`${areaGroup.area}小計`, "", "", "", `NT$ ${moneyRange(areaGroup.subtotal)}`, ""].join("｜")
-      ]),
+      ...tradeGroup.areas.flatMap((areaGroup) => areaGroup.rows.map((row) => {
+        const item = { ...row, name: formatEstimateItemName(areaGroup.area, row.name) };
+        return toEstimateDetailCells(item, `NT$ ${moneyRange(row.subtotal)}`).join("｜");
+      })),
       [`${tradeGroup.trade}小計`, "", "", "", `NT$ ${moneyRange(tradeGroup.subtotal)}`, ""].join("｜")
     ]),
     ...totalRows.map(([label, total]) => [label, "", "", "", `NT$ ${moneyRange(total)}`, ""].join("｜")),
@@ -1705,62 +1702,52 @@ function App() {
           </div>
           <textarea className="mt-4 min-h-56 w-full rounded-lg border border-coffee/15 bg-white p-4 text-sm leading-7 text-stone-800 shadow-inner shadow-coffee/5" readOnly value={summaryText} />
 
-          <div className="mt-5 overflow-x-auto rounded-lg border border-coffee/15 bg-white">
-            <div className="border-b border-coffee/10 bg-wood/20 px-4 py-3">
-              <h3 className="text-lg font-black text-coffee">各工種估價明細</h3>
+          <div className="estimate-detail mt-5 overflow-hidden rounded-lg border border-neutral-300">
+            <div className="border-b border-neutral-300 bg-neutral-200 px-4 py-3">
+              <h3 className="text-lg font-black text-neutral-900">各工種估價明細</h3>
               <p className="mt-1 text-sm text-stone-600">{comparisonSafeMode ? "防比價模式已啟用：所有項目統一以 1 式及該項總價列示。" : "依目前填寫內容產生，備註會顯示於各項目右側。"}</p>
             </div>
-            <table className="estimate-detail-desktop hidden md:table print:table w-full min-w-[980px] table-fixed border-collapse text-sm">
+            <table className="estimate-detail-desktop hidden md:table print:table w-full table-fixed border-collapse text-sm">
               <colgroup>
                 {estimateDetailColumnWidths.map((width, index) => <col key={`${width}-${index}`} style={{ width }} />)}
               </colgroup>
-              <thead className="bg-cream text-left text-coffee">
+              <thead className="bg-neutral-700 text-left text-white">
                 <tr>
-                  <th className="border-b border-coffee/10 px-3 py-2.5">項目</th>
-                  <th className="border-b border-coffee/10 px-3 py-2.5 text-right">數量</th>
-                  <th className="border-b border-coffee/10 px-3 py-2.5">單位</th>
-                  <th className="border-b border-coffee/10 px-3 py-2.5 text-right">單價</th>
-                  <th className="border-b border-coffee/10 px-3 py-2.5 text-right">單項總價</th>
-                  <th className="border-b border-coffee/10 px-3 py-2.5">備註</th>
+                  <th className="px-3 py-2.5">項目</th>
+                  <th className="px-3 py-2.5 text-right">數量</th>
+                  <th className="px-3 py-2.5">單位</th>
+                  <th className="px-3 py-2.5 text-right">單價</th>
+                  <th className="px-3 py-2.5 text-right">單項總價</th>
+                  <th className="px-3 py-2.5">備註</th>
                 </tr>
               </thead>
               <tbody>
                 {estimateTradeGroups.map((tradeGroup) => (
                   <React.Fragment key={tradeGroup.trade}>
-                    <tr className="bg-wood/55">
-                      <td className="border-b border-coffee/20 px-3 py-3 text-base font-black text-coffee" colSpan="6">工種：{tradeGroup.trade}</td>
+                    <tr className="bg-neutral-300">
+                      <td className="px-3 py-2 font-bold text-neutral-900" colSpan="6">工種：{tradeGroup.trade}</td>
                     </tr>
-                    {tradeGroup.areas.map((areaGroup) => (
-                      <React.Fragment key={`${tradeGroup.trade}-${areaGroup.area}`}>
-                        <tr className="bg-wood/20">
-                          <td className="border-b border-coffee/10 px-3 py-2.5 font-black text-coffee" colSpan="6">施工區域：{areaGroup.area}</td>
+                    {tradeGroup.areas.flatMap((areaGroup, areaIndex) =>
+                      areaGroup.rows.map((row, index) => (
+                        <tr key={`${areaIndex}-${index}`}>
+                          <td className="break-words px-3 py-2.5 text-neutral-800">{formatEstimateItemName(areaGroup.area, row.name)}</td>
+                          <td className="px-3 py-2.5 text-right text-stone-700">{row.qty}</td>
+                          <td className="px-3 py-2.5 text-stone-700">{row.unit}</td>
+                          <td className="px-3 py-2.5 text-right text-stone-700">{row.unitPrice}</td>
+                          <td className="px-3 py-2.5 text-right font-bold text-stone-800">NT$ {moneyRange(row.subtotal)}</td>
+                          <td className="whitespace-normal break-words px-3 py-2.5 text-stone-700">{cleanNote(row.note)}</td>
                         </tr>
-                        {areaGroup.rows.map((row, index) => (
-                          <tr key={`${tradeGroup.trade}-${areaGroup.area}-${row.name}-${index}`} className="odd:bg-white even:bg-creamSoft">
-                            <td className="break-words border-b border-coffee/10 px-3 py-2.5 text-stone-800">{row.name}</td>
-                            <td className="border-b border-coffee/10 px-3 py-2.5 text-right text-stone-700">{row.qty}</td>
-                            <td className="border-b border-coffee/10 px-3 py-2.5 text-stone-700">{row.unit}</td>
-                            <td className="border-b border-coffee/10 px-3 py-2.5 text-right text-stone-700">{row.unitPrice}</td>
-                            <td className="border-b border-coffee/10 px-3 py-2.5 text-right font-bold text-stone-800">NT$ {moneyRange(row.subtotal)}</td>
-                            <td className="whitespace-normal break-words border-b border-coffee/10 px-3 py-2.5 text-stone-700">{cleanNote(row.note)}</td>
-                          </tr>
-                        ))}
-                        <tr className="bg-cream">
-                          <td className="border-b border-coffee/10 px-3 py-2.5 text-right font-black text-coffee" colSpan="4">{areaGroup.area} 小計</td>
-                          <td className="border-b border-coffee/10 px-3 py-2.5 text-right font-black text-coffee">NT$ {moneyRange(areaGroup.subtotal)}</td>
-                          <td className="border-b border-coffee/10 px-3 py-2.5"></td>
-                        </tr>
-                      </React.Fragment>
-                    ))}
-                    <tr className="bg-wood/40">
-                      <td className="border-b border-coffee/20 px-3 py-3 text-right font-black text-coffee" colSpan="4">{tradeGroup.trade} 小計</td>
-                      <td className="border-b border-coffee/20 px-3 py-3 text-right font-black text-coffee">NT$ {moneyRange(tradeGroup.subtotal)}</td>
-                      <td className="border-b border-coffee/20 px-3 py-3"></td>
+                      ))
+                    )}
+                    <tr className="bg-neutral-200">
+                      <td className="px-3 py-3 text-right font-black text-neutral-900" colSpan="4">{tradeGroup.trade} 小計</td>
+                      <td className="px-3 py-3 text-right font-black text-neutral-900">NT$ {moneyRange(tradeGroup.subtotal)}</td>
+                      <td className="px-3 py-3"></td>
                     </tr>
                   </React.Fragment>
                 ))}
               </tbody>
-              <tfoot className="bg-coffee text-white">
+              <tfoot className="bg-neutral-700 text-white">
                 <tr>
                   <td className="px-3 py-3 font-bold" colSpan="4">稅前工程總額</td>
                   <td className="px-3 py-3 text-right font-bold">NT$ {moneyRange(grandTotal)}</td>
@@ -1780,7 +1767,7 @@ function App() {
                     <td className="px-3 py-3"></td>
                   </tr>
                 )}
-                <tr className="bg-stone-950">
+                <tr className="bg-neutral-900">
                   <td className="px-3 py-4 text-base font-black" colSpan="4">{finalTotalLabel}</td>
                   <td className="px-3 py-4 text-right text-base font-black">NT$ {moneyRange(finalTotal)}</td>
                   <td className="px-3 py-4"></td>
@@ -1789,48 +1776,41 @@ function App() {
             </table>
             <div className="estimate-detail-mobile md:hidden print:hidden">
               {estimateTradeGroups.map((tradeGroup) => (
-                <section key={`mobile-${tradeGroup.trade}`} className="border-b-2 border-coffee/25 last:border-b-0">
-                  <h4 className="bg-wood/55 px-4 py-3 text-base font-black text-coffee">工種：{tradeGroup.trade}</h4>
-                  {tradeGroup.areas.map((areaGroup) => (
-                    <section key={`mobile-${tradeGroup.trade}-${areaGroup.area}`}>
-                      <h5 className="bg-wood/20 px-4 py-2.5 font-black text-coffee">施工區域：{areaGroup.area}</h5>
-                      {areaGroup.rows.map((row, index) => (
-                    <article key={`mobile-${tradeGroup.trade}-${areaGroup.area}-${row.name}-${index}`} className="border-b border-coffee/10 px-4 py-3 last:border-b-0">
-                      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
-                        <div>
-                          <div className="text-xs font-bold text-stone-500">項目</div>
-                          <div className="mt-1 break-words font-bold text-stone-800">{row.name}</div>
+                <section key={`mobile-${tradeGroup.trade}`} className="border-b-2 border-neutral-300 last:border-b-0">
+                  <h4 className="bg-neutral-300 px-4 py-3 font-bold text-neutral-900">工種：{tradeGroup.trade}</h4>
+                  {tradeGroup.areas.flatMap((areaGroup, areaIndex) =>
+                    areaGroup.rows.map((row, index) => (
+                      <article key={`${areaIndex}-${index}`} className="border-b border-neutral-300 px-4 py-3 last:border-b-0">
+                        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+                          <div>
+                            <div className="text-xs font-bold text-stone-500">項目</div>
+                            <div className="mt-1 break-words font-bold text-neutral-800">{formatEstimateItemName(areaGroup.area, row.name)}</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-xs font-bold text-stone-500">單項總價</div>
+                            <div className="mt-1 whitespace-nowrap font-black text-neutral-900">NT$ {moneyRange(row.subtotal)}</div>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <div className="text-xs font-bold text-stone-500">單項總價</div>
-                          <div className="mt-1 whitespace-nowrap font-black text-coffee">NT$ {moneyRange(row.subtotal)}</div>
+                        <div className="mt-3 grid grid-cols-3 gap-3 border-t border-neutral-300 pt-3 text-sm">
+                          <div><span className="font-bold text-stone-500">數量：</span><span className="text-stone-800">{row.qty}</span></div>
+                          <div><span className="font-bold text-stone-500">單位：</span><span className="text-stone-800">{row.unit}</span></div>
+                          <div><span className="font-bold text-stone-500">單價：</span><span className="text-stone-800">{row.unitPrice}</span></div>
                         </div>
-                      </div>
-                      <div className="mt-3 grid grid-cols-3 gap-3 border-t border-coffee/10 pt-3 text-sm">
-                        <div><span className="font-bold text-stone-500">數量：</span><span className="text-stone-800">{row.qty}</span></div>
-                        <div><span className="font-bold text-stone-500">單位：</span><span className="text-stone-800">{row.unit}</span></div>
-                        <div><span className="font-bold text-stone-500">單價：</span><span className="text-stone-800">{row.unitPrice}</span></div>
-                      </div>
-                      {cleanNote(row.note) && (
-                        <div className="mt-3 break-words border-t border-coffee/10 pt-3 text-sm leading-6 text-stone-700">
-                          <span className="font-bold text-stone-500">備註：</span>{cleanNote(row.note)}
-                        </div>
-                      )}
-                    </article>
-                      ))}
-                      <div className="flex items-center justify-between gap-3 bg-cream px-4 py-3 font-black text-coffee">
-                        <span>{areaGroup.area} 小計</span>
-                        <span>NT$ {moneyRange(areaGroup.subtotal)}</span>
-                      </div>
-                    </section>
-                  ))}
-                  <div className="flex items-center justify-between gap-3 bg-wood/40 px-4 py-3 font-black text-coffee">
+                        {cleanNote(row.note) && (
+                          <div className="mt-3 break-words border-t border-neutral-300 pt-3 text-sm leading-6 text-stone-700">
+                            <span className="font-bold text-stone-500">備註：</span>{cleanNote(row.note)}
+                          </div>
+                        )}
+                      </article>
+                    ))
+                  )}
+                  <div className="flex items-center justify-between gap-3 bg-neutral-200 px-4 py-3 font-bold text-neutral-900">
                     <span>{tradeGroup.trade} 小計</span>
                     <span>NT$ {moneyRange(tradeGroup.subtotal)}</span>
                   </div>
                 </section>
               ))}
-              <div className="bg-coffee px-4 py-3 text-white">
+              <div className="bg-neutral-700 px-4 py-3 text-white">
                 <div className="flex items-center justify-between gap-3 py-1.5 font-bold">
                   <span>稅前工程總額</span><span>NT$ {moneyRange(grandTotal)}</span>
                 </div>
@@ -1849,8 +1829,8 @@ function App() {
                 </div>
               </div>
             </div>
-            <div className="no-print flex justify-end border-t border-coffee/10 bg-creamSoft px-4 py-3">
-              <button className="rounded-lg bg-coffee px-4 py-3 font-bold text-white" type="button" onClick={copyDetail}>
+            <div className="no-print flex justify-end border-t border-neutral-300 bg-neutral-100 px-4 py-3">
+              <button className="rounded-lg bg-neutral-700 px-4 py-3 font-bold text-white" type="button" onClick={copyDetail}>
                 {copied ? "已複製" : "複製明細內容"}
               </button>
             </div>
