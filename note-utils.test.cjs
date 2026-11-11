@@ -18,11 +18,11 @@ test("filled notes are trimmed and appended", () => {
 test("offline app shell includes estimate helper scripts", () => {
   const serviceWorker = fs.readFileSync("./sw.js", "utf8");
   const index = fs.readFileSync("./index.html", "utf8");
-  assert.match(serviceWorker, /kaiwo-estimate-v47/);
+  assert.match(serviceWorker, /kaiwo-estimate-v48/);
   assert.match(serviceWorker, /\/app\.jsx\?v=44/);
   assert.match(serviceWorker, /\/note-utils\.js\?v=15/);
   assert.match(serviceWorker, /\/editable-text-utils\.js\?v=2/);
-  assert.match(serviceWorker, /\/unit-utils\.js\?v=1/);
+  assert.match(serviceWorker, /\/unit-utils\.js\?v=2/);
   assert.match(serviceWorker, /\/item-enabled-utils\.js\?v=1/);
   assert.match(serviceWorker, /\/flooring-rows-utils\.js\?v=1/);
   assert.match(serviceWorker, /\/area-utils\.js\?v=2/);
@@ -31,7 +31,7 @@ test("offline app shell includes estimate helper scripts", () => {
   assert.match(index, /estimate-display-utils\.js\?v=16/);
   assert.match(index, /note-utils\.js\?v=15/);
   assert.match(index, /editable-text-utils\.js\?v=2/);
-  assert.match(index, /unit-utils\.js\?v=1/);
+  assert.match(index, /unit-utils\.js\?v=2/);
   assert.match(index, /item-enabled-utils\.js\?v=1/);
   assert.match(index, /flooring-rows-utils\.js\?v=1/);
   assert.match(index, /area-utils\.js\?v=2/);

@@ -4,12 +4,12 @@ const fs = require("node:fs");
 
 test("unit choices keep the requested order without duplicate entries", () => {
   const { unitChoices } = require("./unit-utils.js");
-  assert.deepEqual(unitChoices("坪"), ["尺", "坪", "式", "處", "樘"]);
+  assert.deepEqual(unitChoices("坪"), ["尺", "坪", "式", "處", "樘", "片", "面"]);
 });
 
 test("unit choices preserve an existing catalog unit after the common choices", () => {
   const { unitChoices } = require("./unit-utils.js");
-  assert.deepEqual(unitChoices("臺尺"), ["尺", "坪", "式", "處", "樘", "臺尺"]);
+  assert.deepEqual(unitChoices("臺尺"), ["尺", "坪", "式", "處", "樘", "片", "面", "臺尺"]);
 });
 
 test("all trade unit controls use the shared dropdown", () => {
