@@ -16,8 +16,13 @@ test("disabled rows are omitted while their entered data remains available", () 
 
 test("all estimate output is filtered by the shared enabled rule", () => {
   const app = fs.readFileSync("./app.jsx", "utf8");
-  assert.match(app, /const rawEstimateRows = \[[\s\S]*?\]\.filter\(isItemEnabled\);/);
+  assert.match(app, /const rawEstimateRows = \[[\s\S]*?\]\.filter\(isItemEnabled\)/);
   assert.match(app, /enabledRows\(customTrades[\s\S]*?enabledRows\(cabinetTotals[\s\S]*?enabledRows\(woodTotals[\s\S]*?enabledRows\(flooringTotals[\s\S]*?enabledRows\(masonryTotals[\s\S]*?enabledRows\(protectionTotals[\s\S]*?enabledRows\(plumbingExtraTotals[\s\S]*?enabledRows\(paintingExtraTotals[\s\S]*?enabledRows\(airConditioningTotals/);
+});
+
+test("estimate details omit every row without a positive calculated amount", () => {
+  const app = fs.readFileSync("./app.jsx", "utf8");
+  assert.match(app, /const rawEstimateRows = \[[\s\S]*?\]\.filter\(isItemEnabled\)\.filter\(\(row\) => hasAmount\(row\.subtotal\)\);/);
 });
 
 test("every standard trade and cleanup excludes disabled amounts", () => {

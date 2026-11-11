@@ -695,7 +695,7 @@ function App() {
       unitPrice: actualUnitPriceText(row.actualUnitPrice),
       subtotal: row.subtotal
     }))
-  ].filter(isItemEnabled);
+  ].filter(isItemEnabled).filter((row) => hasAmount(row.subtotal));
   const estimateRows = rawEstimateRows.map((row) => toComparisonSafeRow(row, comparisonSafeMode, `NT$ ${moneyRange(row.subtotal)}`));
 
   const estimateAreaOrder = ["客廳", "全室", ...allAreas.filter((area) => area !== "客廳")];
