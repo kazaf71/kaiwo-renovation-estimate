@@ -784,9 +784,9 @@ function App() {
     estimateTradeGroups.forEach((tradeGroup) => {
       tableRows.push(odsCellsRow([{ value: `工種：${tradeGroup.trade}`, span: 6, style: "section" }]));
       tradeGroup.areas.forEach((areaGroup) => {
-        tableRows.push(odsCellsRow([{ value: `施工區域：${areaGroup.area}`, span: 6, style: "areaSection" }]));
         areaGroup.rows.forEach((row) => {
-          const cells = toEstimateDetailCells(row, `NT$ ${moneyRange(row.subtotal)}`);
+          const item = { ...row, name: formatEstimateItemName(areaGroup.area, row.name) };
+          const cells = toEstimateDetailCells(item, `NT$ ${moneyRange(row.subtotal)}`);
           tableRows.push(odsCellsRow([
             { value: cells[0], style: "bodyItem" },
             { value: cells[1], style: "bodyCenter" },
@@ -796,11 +796,6 @@ function App() {
             { value: cells[5], style: "note" }
           ]));
         });
-        tableRows.push(odsCellsRow([
-          { value: `${areaGroup.area} 小計`, span: 4, style: "subtotalLabel" },
-          { value: `NT$ ${moneyRange(areaGroup.subtotal)}`, style: "subtotalAmount" },
-          { value: "", style: "subtotal" }
-        ]));
       });
       tableRows.push(odsCellsRow([
         { value: `${tradeGroup.trade} 小計`, span: 4, style: "tradeSubtotalLabel" },
@@ -840,32 +835,28 @@ function App() {
     <style:style style:name="colUnitPrice" style:family="table-column"><style:table-column-properties style:column-width="${estimateOdsColumnWidths[3]}"/></style:style>
     <style:style style:name="colTotal" style:family="table-column"><style:table-column-properties style:column-width="${estimateOdsColumnWidths[4]}"/></style:style>
     <style:style style:name="colNote" style:family="table-column"><style:table-column-properties style:column-width="${estimateOdsColumnWidths[5]}"/></style:style>
-    <style:style style:name="title" style:family="table-cell"><style:table-cell-properties fo:background-color="#F2E7D8" fo:border="0.74pt solid #8B6F58" fo:padding="0.2cm"/><style:paragraph-properties fo:text-align="center"/><style:text-properties fo:font-size="20pt" fo:font-weight="bold" fo:color="#3F2C22"/></style:style>
-    <style:style style:name="meta" style:family="table-cell"><style:table-cell-properties fo:border="0.5pt solid #D8C8B5" fo:padding="0.08cm"/><style:text-properties fo:font-size="9.5pt" fo:color="#4B3428"/></style:style>
-    <style:style style:name="metaLabel" style:family="table-cell"><style:table-cell-properties fo:background-color="#FBF6EF" fo:border="0.5pt solid #D8C8B5" fo:padding="0.08cm"/><style:text-properties fo:font-size="9.5pt" fo:font-weight="bold" fo:color="#4B3428"/></style:style>
-    <style:style style:name="head" style:family="table-cell"><style:table-cell-properties fo:background-color="#5B4637" fo:border="0.5pt solid #5B4637" fo:padding="0.09cm"/><style:text-properties fo:font-size="9.5pt" fo:font-weight="bold" fo:color="#FFFFFF"/></style:style>
-    <style:style style:name="headCenter" style:family="table-cell"><style:table-cell-properties fo:background-color="#5B4637" fo:border="0.5pt solid #5B4637" fo:padding="0.09cm"/><style:paragraph-properties fo:text-align="center"/><style:text-properties fo:font-size="9.5pt" fo:font-weight="bold" fo:color="#FFFFFF"/></style:style>
-    <style:style style:name="headAmount" style:family="table-cell"><style:table-cell-properties fo:background-color="#5B4637" fo:border="0.5pt solid #5B4637" fo:padding="0.09cm"/><style:paragraph-properties fo:text-align="end"/><style:text-properties fo:font-size="9.5pt" fo:font-weight="bold" fo:color="#FFFFFF"/></style:style>
-    <style:style style:name="section" style:family="table-cell"><style:table-cell-properties fo:background-color="#EADBCB" fo:border="0.5pt solid #A88C72" fo:padding="0.09cm"/><style:text-properties fo:font-size="10.5pt" fo:font-weight="bold" fo:color="#3F2C22"/></style:style>
-    <style:style style:name="areaSection" style:family="table-cell"><style:table-cell-properties fo:background-color="#F4EDE4" fo:border="0.5pt solid #B69E83" fo:padding="0.08cm"/><style:text-properties fo:font-size="9.8pt" fo:font-weight="bold" fo:color="#5B4637"/></style:style>
-    <style:style style:name="body" style:family="table-cell"><style:table-cell-properties fo:border="0.5pt solid #D8C8B5" fo:padding="0.07cm"/><style:text-properties fo:font-size="9.3pt" fo:color="#2F2721"/></style:style>
-    <style:style style:name="bodyItem" style:family="table-cell"><style:table-cell-properties fo:border="0.5pt solid #D8C8B5" fo:padding="0.07cm"/><style:text-properties fo:font-size="9.3pt" fo:color="#2F2721"/></style:style>
-    <style:style style:name="bodyCenter" style:family="table-cell"><style:table-cell-properties fo:border="0.5pt solid #D8C8B5" fo:padding="0.07cm"/><style:paragraph-properties fo:text-align="center"/><style:text-properties fo:font-size="9.3pt" fo:color="#2F2721"/></style:style>
-    <style:style style:name="bodyAmount" style:family="table-cell"><style:table-cell-properties fo:border="0.5pt solid #D8C8B5" fo:padding="0.07cm"/><style:paragraph-properties fo:text-align="end"/><style:text-properties fo:font-size="9.3pt" fo:color="#2F2721"/></style:style>
-    <style:style style:name="bodyAmountStrong" style:family="table-cell"><style:table-cell-properties fo:border="0.5pt solid #D8C8B5" fo:padding="0.07cm"/><style:paragraph-properties fo:text-align="end"/><style:text-properties fo:font-size="9.3pt" fo:font-weight="bold" fo:color="#2F2721"/></style:style>
-    <style:style style:name="subtotal" style:family="table-cell"><style:table-cell-properties fo:background-color="#F8F1E8" fo:border="0.5pt solid #B69E83" fo:padding="0.08cm"/></style:style>
-    <style:style style:name="subtotalLabel" style:family="table-cell"><style:table-cell-properties fo:background-color="#F8F1E8" fo:border="0.5pt solid #B69E83" fo:padding="0.08cm"/><style:paragraph-properties fo:text-align="end"/><style:text-properties fo:font-size="9.5pt" fo:font-weight="bold" fo:color="#4B3428"/></style:style>
-    <style:style style:name="subtotalAmount" style:family="table-cell"><style:table-cell-properties fo:background-color="#F8F1E8" fo:border="0.5pt solid #B69E83" fo:padding="0.08cm"/><style:paragraph-properties fo:text-align="end"/><style:text-properties fo:font-size="9.5pt" fo:font-weight="bold" fo:color="#4B3428"/></style:style>
-    <style:style style:name="tradeSubtotal" style:family="table-cell"><style:table-cell-properties fo:background-color="#EADBCB" fo:border="0.5pt solid #8B6F58" fo:padding="0.08cm"/></style:style>
-    <style:style style:name="tradeSubtotalLabel" style:family="table-cell"><style:table-cell-properties fo:background-color="#EADBCB" fo:border="0.5pt solid #8B6F58" fo:padding="0.08cm"/><style:paragraph-properties fo:text-align="end"/><style:text-properties fo:font-size="9.8pt" fo:font-weight="bold" fo:color="#3F2C22"/></style:style>
-    <style:style style:name="tradeSubtotalAmount" style:family="table-cell"><style:table-cell-properties fo:background-color="#EADBCB" fo:border="0.5pt solid #8B6F58" fo:padding="0.08cm"/><style:paragraph-properties fo:text-align="end"/><style:text-properties fo:font-size="9.8pt" fo:font-weight="bold" fo:color="#3F2C22"/></style:style>
-    <style:style style:name="total" style:family="table-cell"><style:table-cell-properties fo:border="0.5pt solid #8B6F58" fo:padding="0.08cm"/></style:style>
-    <style:style style:name="totalLabel" style:family="table-cell"><style:table-cell-properties fo:border="0.5pt solid #8B6F58" fo:padding="0.08cm"/><style:paragraph-properties fo:text-align="end"/><style:text-properties fo:font-size="9.8pt" fo:font-weight="bold" fo:color="#4B3428"/></style:style>
-    <style:style style:name="totalAmount" style:family="table-cell"><style:table-cell-properties fo:border="0.5pt solid #8B6F58" fo:padding="0.08cm"/><style:paragraph-properties fo:text-align="end"/><style:text-properties fo:font-size="9.8pt" fo:font-weight="bold" fo:color="#4B3428"/></style:style>
-    <style:style style:name="grand" style:family="table-cell"><style:table-cell-properties fo:background-color="#3F2C22" fo:border="0.5pt solid #3F2C22" fo:padding="0.11cm"/></style:style>
-    <style:style style:name="grandLabel" style:family="table-cell"><style:table-cell-properties fo:background-color="#3F2C22" fo:border="0.5pt solid #3F2C22" fo:padding="0.11cm"/><style:paragraph-properties fo:text-align="end"/><style:text-properties fo:font-size="11.5pt" fo:font-weight="bold" fo:color="#FFFFFF"/></style:style>
-    <style:style style:name="grandAmount" style:family="table-cell"><style:table-cell-properties fo:background-color="#3F2C22" fo:border="0.5pt solid #3F2C22" fo:padding="0.11cm"/><style:paragraph-properties fo:text-align="end"/><style:text-properties fo:font-size="11.5pt" fo:font-weight="bold" fo:color="#FFFFFF"/></style:style>
-    <style:style style:name="note" style:family="table-cell"><style:table-cell-properties fo:border="0.5pt solid #D8C8B5" fo:padding="0.06cm"/><style:text-properties fo:font-size="8.5pt" fo:color="#5D4A3D"/></style:style>
+    <style:style style:name="title" style:family="table-cell"><style:table-cell-properties fo:border-bottom="1.5pt solid #3F3F3F" fo:padding="0.2cm"/><style:paragraph-properties fo:text-align="center"/><style:text-properties fo:font-size="20pt" fo:font-weight="bold" fo:color="#171717"/></style:style>
+    <style:style style:name="meta" style:family="table-cell"><style:table-cell-properties fo:border="0.5pt solid #BDBDBD" fo:padding="0.08cm"/><style:text-properties fo:font-size="9.5pt" fo:color="#252525"/></style:style>
+    <style:style style:name="metaLabel" style:family="table-cell"><style:table-cell-properties fo:background-color="#E4E4E4" fo:border="0.5pt solid #BDBDBD" fo:padding="0.08cm"/><style:text-properties fo:font-size="9.5pt" fo:font-weight="bold" fo:color="#222222"/></style:style>
+    <style:style style:name="head" style:family="table-cell"><style:table-cell-properties fo:background-color="#3F3F3F" fo:border="0.5pt solid #3F3F3F" fo:padding="0.09cm"/><style:text-properties fo:font-size="9.5pt" fo:font-weight="bold" fo:color="#FFFFFF"/></style:style>
+    <style:style style:name="headCenter" style:family="table-cell"><style:table-cell-properties fo:background-color="#3F3F3F" fo:border="0.5pt solid #3F3F3F" fo:padding="0.09cm"/><style:paragraph-properties fo:text-align="center"/><style:text-properties fo:font-size="9.5pt" fo:font-weight="bold" fo:color="#FFFFFF"/></style:style>
+    <style:style style:name="headAmount" style:family="table-cell"><style:table-cell-properties fo:background-color="#3F3F3F" fo:border="0.5pt solid #3F3F3F" fo:padding="0.09cm"/><style:paragraph-properties fo:text-align="end"/><style:text-properties fo:font-size="9.5pt" fo:font-weight="bold" fo:color="#FFFFFF"/></style:style>
+    <style:style style:name="section" style:family="table-cell"><style:table-cell-properties fo:background-color="#D4D4D4" fo:border="0.5pt solid #A8A8A8" fo:padding="0.09cm"/><style:text-properties fo:font-size="10.5pt" fo:font-weight="bold" fo:color="#111111"/></style:style>
+    <style:style style:name="body" style:family="table-cell"><style:table-cell-properties fo:border="0.5pt solid #B8B8B8" fo:padding="0.07cm"/><style:text-properties fo:font-size="9.3pt" fo:color="#252525"/></style:style>
+    <style:style style:name="bodyItem" style:family="table-cell"><style:table-cell-properties fo:border="0.5pt solid #B8B8B8" fo:padding="0.07cm"/><style:text-properties fo:font-size="9.3pt" fo:color="#252525"/></style:style>
+    <style:style style:name="bodyCenter" style:family="table-cell"><style:table-cell-properties fo:border="0.5pt solid #B8B8B8" fo:padding="0.07cm"/><style:paragraph-properties fo:text-align="center"/><style:text-properties fo:font-size="9.3pt" fo:color="#252525"/></style:style>
+    <style:style style:name="bodyAmount" style:family="table-cell"><style:table-cell-properties fo:border="0.5pt solid #B8B8B8" fo:padding="0.07cm"/><style:paragraph-properties fo:text-align="end"/><style:text-properties fo:font-size="9.3pt" fo:color="#252525"/></style:style>
+    <style:style style:name="bodyAmountStrong" style:family="table-cell"><style:table-cell-properties fo:border="0.5pt solid #B8B8B8" fo:padding="0.07cm"/><style:paragraph-properties fo:text-align="end"/><style:text-properties fo:font-size="9.3pt" fo:font-weight="bold" fo:color="#252525"/></style:style>
+    <style:style style:name="tradeSubtotal" style:family="table-cell"><style:table-cell-properties fo:background-color="#EDEDED" fo:border="0.5pt solid #A8A8A8" fo:padding="0.08cm"/></style:style>
+    <style:style style:name="tradeSubtotalLabel" style:family="table-cell"><style:table-cell-properties fo:background-color="#EDEDED" fo:border="0.5pt solid #A8A8A8" fo:padding="0.08cm"/><style:paragraph-properties fo:text-align="end"/><style:text-properties fo:font-size="9.8pt" fo:font-weight="bold" fo:color="#111111"/></style:style>
+    <style:style style:name="tradeSubtotalAmount" style:family="table-cell"><style:table-cell-properties fo:background-color="#EDEDED" fo:border="0.5pt solid #A8A8A8" fo:padding="0.08cm"/><style:paragraph-properties fo:text-align="end"/><style:text-properties fo:font-size="9.8pt" fo:font-weight="bold" fo:color="#111111"/></style:style>
+    <style:style style:name="total" style:family="table-cell"><style:table-cell-properties fo:border="0.5pt solid #777777" fo:padding="0.08cm"/></style:style>
+    <style:style style:name="totalLabel" style:family="table-cell"><style:table-cell-properties fo:border="0.5pt solid #777777" fo:padding="0.08cm"/><style:paragraph-properties fo:text-align="end"/><style:text-properties fo:font-size="9.8pt" fo:font-weight="bold" fo:color="#252525"/></style:style>
+    <style:style style:name="totalAmount" style:family="table-cell"><style:table-cell-properties fo:border="0.5pt solid #777777" fo:padding="0.08cm"/><style:paragraph-properties fo:text-align="end"/><style:text-properties fo:font-size="9.8pt" fo:font-weight="bold" fo:color="#252525"/></style:style>
+    <style:style style:name="grand" style:family="table-cell"><style:table-cell-properties fo:background-color="#2F2F2F" fo:border="0.5pt solid #2F2F2F" fo:padding="0.11cm"/></style:style>
+    <style:style style:name="grandLabel" style:family="table-cell"><style:table-cell-properties fo:background-color="#2F2F2F" fo:border="0.5pt solid #2F2F2F" fo:padding="0.11cm"/><style:paragraph-properties fo:text-align="end"/><style:text-properties fo:font-size="11.5pt" fo:font-weight="bold" fo:color="#FFFFFF"/></style:style>
+    <style:style style:name="grandAmount" style:family="table-cell"><style:table-cell-properties fo:background-color="#2F2F2F" fo:border="0.5pt solid #2F2F2F" fo:padding="0.11cm"/><style:paragraph-properties fo:text-align="end"/><style:text-properties fo:font-size="11.5pt" fo:font-weight="bold" fo:color="#FFFFFF"/></style:style>
+    <style:style style:name="note" style:family="table-cell"><style:table-cell-properties fo:border="0.5pt solid #B8B8B8" fo:padding="0.06cm"/><style:text-properties fo:font-size="8.5pt" fo:color="#555555"/></style:style>
     <style:style style:name="spacer" style:family="table-cell"><style:table-cell-properties fo:padding="0.02cm"/></style:style>
   </office:automatic-styles>
   <office:body>
@@ -934,12 +925,11 @@ function App() {
     estimateTradeGroups.forEach((tradeGroup) => {
       rows.push(`<tr>${htmlCell(`工種：${tradeGroup.trade}`, "th", 'colspan="6" class="trade-section"')}</tr>`);
       tradeGroup.areas.forEach((areaGroup) => {
-        rows.push(`<tr>${htmlCell(`施工區域：${areaGroup.area}`, "th", 'colspan="6" class="area-section"')}</tr>`);
         areaGroup.rows.forEach((row) => {
-          const cells = toEstimateDetailCells(row, `NT$ ${moneyRange(row.subtotal)}`);
+          const item = { ...row, name: formatEstimateItemName(areaGroup.area, row.name) };
+          const cells = toEstimateDetailCells(item, `NT$ ${moneyRange(row.subtotal)}`);
           rows.push(`<tr>${cells.map((value, index) => htmlCell(value, "td", index === 5 ? 'class="note item-note-output"' : "")).join("")}</tr>`);
         });
-        rows.push(`<tr>${htmlCell(`${areaGroup.area} 小計`, "td", 'colspan="4" class="subtotal"')}${htmlCell(`NT$ ${moneyRange(areaGroup.subtotal)}`, "td", 'class="subtotal amount"')}${htmlCell("", "td", 'class="subtotal"')}</tr>`);
       });
       rows.push(`<tr>${htmlCell(`${tradeGroup.trade} 小計`, "td", 'colspan="4" class="trade-subtotal"')}${htmlCell(`NT$ ${moneyRange(tradeGroup.subtotal)}`, "td", 'class="trade-subtotal amount"')}${htmlCell("", "td", 'class="trade-subtotal"')}</tr>`);
     });
@@ -955,18 +945,16 @@ function App() {
 <head>
   <meta charset="utf-8" />
   <style>
-    body { font-family: "Microsoft JhengHei", Arial, sans-serif; margin: 18px; color: #2f2721; }
+    body { font-family: "Microsoft JhengHei", Arial, sans-serif; margin: 18px; color: #252525; }
     table { border-collapse: collapse; table-layout: fixed; width: 100%; }
-    th, td { border: 1px solid #b69e83; padding: 7px 8px; font-size: 12px; vertical-align: middle; word-break: break-word; white-space: normal; }
-    th { background: #6f5948; color: #fff; }
-    .title { background: #f2e7d8; color: #4b3428; font-size: 24px; text-align: center; padding: 12px; }
-    .trade-section { background: #d9c2a8; color: #3f2c22; text-align: left; font-size: 13px; }
-    .area-section { background: #efe3d3; color: #4b3428; text-align: left; }
-    .subtotal { background: #f8f1e8; font-weight: bold; }
-    .trade-subtotal { background: #eadbcb; font-weight: bold; }
+    th, td { border: 1px solid #b8b8b8; padding: 7px 8px; font-size: 12px; vertical-align: middle; word-break: break-word; white-space: normal; }
+    th { background: #3f3f3f; color: #fff; }
+    .title { background: #fff; color: #171717; border-bottom: 3px solid #3f3f3f; font-size: 24px; text-align: center; padding: 12px; }
+    .trade-section { background: #d4d4d4; color: #111; text-align: left; font-size: 13px; }
+    .trade-subtotal { background: #ededed; font-weight: bold; }
     .total { font-weight: bold; }
     .amount { text-align: right; }
-    .note { color: #5d4a3d; }
+    .note { color: #555; }
   </style>
 </head>
 <body><table>${colgroup}${rows.join("")}</table></body>
