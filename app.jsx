@@ -7,6 +7,7 @@ const { isItemEnabled, enabledRows, enabledSubtotal, mergeImportedDraft } = wind
 const { migrateFloorRows, updateFloorRow, removeFloorRow } = window.KaiwoFlooringRows;
 const { areaChoices, moveItemToArea, migrateProtectionRows, updateProtectionRow, removeProtectionRow } = window.KaiwoAreas;
 const {
+  buildEstimateFileName,
   buildPaymentLines,
   buildEstimateTitles,
   estimateDetailColumnWidths,
@@ -21,7 +22,6 @@ const {
   toComparisonSafeRow
 } = window.KaiwoEstimateDisplay;
 const {
-  buildPdfFileName,
   paginateRenderedPdf,
   paginateEstimateGroupsForPdf,
   shouldAppendPdfSummaryPage
@@ -56,7 +56,10 @@ function useDraftState(key, fallback) {
 }
 function backupDraft() {
   const url = URL.createObjectURL(new Blob([JSON.stringify({version: 1, data: savedDraft}, null, 2)], {type: "application/json"}));
-  const a = document.createElement("a"); a.href = url; a.download = "楷沃估價草稿.json"; a.click();
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = buildEstimateFileName(savedDraft.projectLocation, savedDraft.projectName, new Date(), "json");
+  a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 async function importDraft(event) {
@@ -747,11 +750,6 @@ function App() {
 
     const now = new Date();
     const today = now.toLocaleDateString("zh-TW");
-    const fileDate = [
-      now.getFullYear(),
-      String(now.getMonth() + 1).padStart(2, "0"),
-      String(now.getDate()).padStart(2, "0")
-    ].join("");
     const tableRows = [
       odsCellsRow([{ value: formalTitle, span: 6, style: "title" }]),
       odsCellsRow([
@@ -897,7 +895,7 @@ function App() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `楷沃裝修工程-估價單-${fileDate}.ods`;
+    link.download = buildEstimateFileName(projectLocation, projectName, now, "ods");
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -907,11 +905,6 @@ function App() {
   const downloadExcel = () => {
     const now = new Date();
     const today = now.toLocaleDateString("zh-TW");
-    const fileDate = [
-      now.getFullYear(),
-      String(now.getMonth() + 1).padStart(2, "0"),
-      String(now.getDate()).padStart(2, "0")
-    ].join("");
     const htmlCell = (value, tag = "td", extra = "") => `<${tag} ${extra}>${xmlEscape(value)}</${tag}>`;
     const colgroup = `<colgroup>${estimateDetailColumnWidths.map((width) => `<col style="width:${width}">`).join("")}</colgroup>`;
     const rows = [
@@ -963,7 +956,7 @@ function App() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `楷沃裝修工程-估價單-${fileDate}.xls`;
+    link.download = buildEstimateFileName(projectLocation, projectName, now, "xls");
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -1103,7 +1096,7 @@ function App() {
         pdf.addImage(canvas.toDataURL("image/jpeg", 0.94), "JPEG", (pageWidth - imageWidth) / 2, 0, imageWidth, imageHeight, undefined, "FAST");
         }
       }
-      pdf.save(buildPdfFileName(projectName, now));
+      pdf.save(buildEstimateFileName(projectLocation, projectName, now, "pdf"));
     } catch (error) {
       console.error("PDF export failed", error);
       window.alert("PDF 產生失敗，請重新整理頁面後再試一次。");

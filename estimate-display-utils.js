@@ -30,6 +30,22 @@
     };
   };
 
+  const buildEstimateFileName = (projectLocation, projectName, date = new Date(), extension = "json") => {
+    const pad = (value) => String(value).padStart(2, "0");
+    const timestamp = `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}${pad(date.getHours())}${pad(date.getMinutes())}`;
+    const cleanPart = (value) => String(value || "")
+      .trim()
+      .replace(/[<>:"/\\|?*\u0000-\u001f]/g, "-")
+      .replace(/\s+/g, " ")
+      .replace(/[. ]+$/g, "");
+    const location = cleanPart(projectLocation);
+    const rawProject = cleanPart(projectName);
+    const project = rawProject ? (rawProject.endsWith("案") ? rawProject : `${rawProject}案`) : "";
+    const label = [location, project].filter(Boolean).join(" ") || "估價草稿";
+    const safeExtension = String(extension || "json").replace(/^\.+/, "").replace(/[^a-z0-9]/gi, "") || "json";
+    return `${timestamp} ${label}.${safeExtension.toLowerCase()}`;
+  };
+
   const formatProjectLocation = (projectLocation) =>
     String(projectLocation || "").trim() || "未填寫";
 
@@ -105,6 +121,7 @@
   };
 
   return {
+    buildEstimateFileName,
     buildPaymentLines: (stages) => stages.filter((stage) => stage.name.trim()).map((stage, index) => {
       const number = index + 1;
       const digits = "零一二三四五六七八九";

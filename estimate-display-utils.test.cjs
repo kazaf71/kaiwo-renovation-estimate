@@ -2,6 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const {
+  buildEstimateFileName,
   buildPaymentLines,
   buildEstimateTitles,
   estimateDetailColumnWidths,
@@ -182,6 +183,20 @@ test("estimate titles use the editable project name", () => {
     summaryTitle: "裝修預算初估表",
     formalTitle: "楷沃裝修工程 估價表"
   });
+});
+
+test("all estimate downloads can share timestamp, location and project name", () => {
+  const now = new Date(2026, 10, 11, 20, 54);
+  assert.equal(buildEstimateFileName("三重", "許宅", now, "json"), "202611112054 三重 許宅案.json");
+  assert.equal(buildEstimateFileName("三重", "許宅案", now, "pdf"), "202611112054 三重 許宅案.pdf");
+  assert.equal(buildEstimateFileName("三重", "許宅", now, "ods"), "202611112054 三重 許宅案.ods");
+  assert.equal(buildEstimateFileName("三重", "許宅", now, "xls"), "202611112054 三重 許宅案.xls");
+});
+
+test("draft backup filename removes invalid filename characters and omits empty labels", () => {
+  const now = new Date(2026, 10, 11, 20, 54);
+  assert.equal(buildEstimateFileName("台北/中山", "王宅:裝修", now, "json"), "202611112054 台北-中山 王宅-裝修案.json");
+  assert.equal(buildEstimateFileName("", "", now, "json"), "202611112054 估價草稿.json");
 });
 
 test("project location is trimmed and has a clear empty fallback", () => {
