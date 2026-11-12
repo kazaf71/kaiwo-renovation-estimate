@@ -8,6 +8,8 @@ const {
   estimateDetailColumnWidths,
   estimateDetailHeaders,
   estimateOdsColumnWidths,
+  cabinetBillableQuantity,
+  formatCabinetRowQuantity,
   formatCabinetQuantity,
   formatEstimateItemName,
   formatProjectLocation,
@@ -112,6 +114,23 @@ test("an item is included only when quantity and entered price are positive", ()
 test("cabinet quantity displays only the total billable feet", () => {
   assert.equal(formatCabinetQuantity(3.96, 1), "3.96");
   assert.equal(formatCabinetQuantity(3.96, 2), "7.92");
+});
+
+test("cabinet direct-price items bypass dimension conversion", () => {
+  const dimensional = { widthCm: 303, qty: 2 };
+  const direct = { pricingMode: "direct", widthCm: 1, qty: 2 };
+
+  assert.equal(cabinetBillableQuantity(dimensional), 20);
+  assert.equal(formatCabinetRowQuantity(dimensional), "20.00");
+  assert.equal(cabinetBillableQuantity(direct), 2);
+  assert.equal(formatCabinetRowQuantity(direct), "2");
+});
+
+test("cabinet editor offers a direct-price item without width conversion", () => {
+  const app = fs.readFileSync("./app.jsx", "utf8");
+  assert.match(app, /新增單項（直接計價）/);
+  assert.match(app, /pricingMode:\s*"direct"/);
+  assert.match(app, /row\.pricingMode\s*===\s*"direct"/);
 });
 
 test("cabinet furniture choices are independent and include upper and lower cabinets", () => {

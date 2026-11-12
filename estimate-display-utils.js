@@ -18,6 +18,14 @@
   const formatCabinetQuantity = (widthFeet, count) =>
     (Number(widthFeet) * Number(count || 0)).toFixed(2);
 
+  const cabinetBillableQuantity = (row = {}) => row.pricingMode === "direct"
+    ? Number(row.qty || 0)
+    : (Number(row.widthCm || 0) / 30.3) * Number(row.qty || 0);
+
+  const formatCabinetRowQuantity = (row = {}) => row.pricingMode === "direct"
+    ? String(Number(row.qty || 0))
+    : cabinetBillableQuantity(row).toFixed(2);
+
   const estimateDetailHeaders = ["項目", "數量", "單位", "單價", "單項總價", "備註"];
   const estimateDetailColumnWidths = ["30%", "7%", "6%", "12%", "15%", "30%"];
   const estimateOdsColumnWidths = ["5.5cm", "1.3cm", "1.1cm", "2.2cm", "2.8cm", "5.5cm"];
@@ -121,6 +129,7 @@
   };
 
   return {
+    cabinetBillableQuantity,
     buildEstimateFileName,
     buildPaymentLines: (stages) => stages.filter((stage) => stage.name.trim()).map((stage, index) => {
       const number = index + 1;
@@ -135,6 +144,7 @@
     estimateDetailHeaders,
     estimateOdsColumnWidths,
     formatCabinetQuantity,
+    formatCabinetRowQuantity,
     formatEstimateItemName,
     formatProjectLocation,
     groupEstimateRowsByTradeAndArea,

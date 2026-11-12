@@ -13,7 +13,9 @@ const {
   estimateDetailColumnWidths,
   estimateDetailHeaders,
   estimateOdsColumnWidths,
+  cabinetBillableQuantity,
   formatCabinetQuantity,
+  formatCabinetRowQuantity,
   formatEstimateItemName,
   formatProjectLocation,
   groupEstimateRowsByTradeAndArea,
@@ -325,6 +327,7 @@ function App() {
   const cabinetTotals = visibleCabinetRows.map((row) => {
     const type = cabinetTypeMap[row.type] || pricing.cabinetTypes[0];
     const widthFeet = toFeet(row.widthCm);
+    const billableQuantity = cabinetBillableQuantity(row);
     return {
       ...row,
       typeName: type.name,
@@ -333,7 +336,8 @@ function App() {
       unitLow: Number(row.low || 0),
       unitHigh: Number(row.high || 0),
       widthFeet,
-      subtotal: enabledSubtotal(row, actualPricedPair(widthFeet * Number(row.qty || 0), row.actualUnitPrice), pair())
+      billableQuantity,
+      subtotal: enabledSubtotal(row, actualPricedPair(billableQuantity, row.actualUnitPrice), pair())
     };
   });
 
@@ -505,6 +509,14 @@ function App() {
     setShowResult(false);
   };
 
+  const addDirectCabinetItem = (area = selectedAreas[0] || "客廳") => {
+    setCabinetRows((rows) => [
+      ...rows,
+      { id: crypto.randomUUID(), enabled: true, pricingMode: "direct", area, name: "新增單項", customText: "", note: "", type: "tall", widthCm: 0, qty: 1, unit: "式", low: 0, high: 0, fixed: "", actualUnitPrice: "" }
+    ]);
+    setShowResult(false);
+  };
+
   const addWood = (area = selectedAreas[0] || "全室") => {
     const item = woodItemMap.flatCeiling || pricing.woodworkItems[0];
     setWoodRows((rows) => [...rows, { id: crypto.randomUUID(), enabled: true, area, itemId: item.id, customText: itemDisplayName(item), note: "", qty: 1, unit: item.unit, low: item.low, high: item.high, fixed: "", actualUnitPrice: "" }]);
@@ -602,7 +614,7 @@ function App() {
       area: row.area,
       name: row.customText,
       note: row.note || "",
-      qty: formatCabinetQuantity(row.widthFeet, row.qty),
+      qty: formatCabinetRowQuantity(row),
       unit: row.unit,
       unitPrice: actualUnitPriceText(row.actualUnitPrice),
       subtotal: row.subtotal
@@ -1204,9 +1216,14 @@ function App() {
                         <h3 className="text-xl font-black text-coffee">{area}區櫃體工程</h3>
                         <p className="text-sm text-stone-500">此區小計：NT$ {moneyRange(areaTotal)}</p>
                       </div>
-                      <button className="rounded-lg border border-coffee/20 bg-wood/25 px-4 py-2 text-sm font-black text-coffee" type="button" onClick={() => addCabinet(area)}>
-                        新增{area}櫃體
-                      </button>
+                      <div className="flex flex-wrap gap-2">
+                        <button className="rounded-lg border border-coffee/20 bg-wood/25 px-4 py-2 text-sm font-black text-coffee" type="button" onClick={() => addCabinet(area)}>
+                          新增{area}櫃體
+                        </button>
+                        <button className="rounded-lg border border-coffee/20 bg-white px-4 py-2 text-sm font-black text-coffee" type="button" onClick={() => addDirectCabinetItem(area)}>
+                          新增單項（直接計價）
+                        </button>
+                      </div>
                     </div>
 
                     {areaRows.length === 0 ? (
@@ -1216,20 +1233,24 @@ function App() {
                         {areaRows.map((row) => (
                           <div key={row.id} className={`rounded-lg border border-coffee/10 bg-creamSoft p-4 ${isItemEnabled(row) ? "" : "item-paused"}`}>
                             <ItemEnabledToggle enabled={isItemEnabled(row)} onChange={(enabled) => updateCabinet(row.id, { enabled })} />
-                            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[130px_1fr_1fr_110px_90px_90px_120px]">
+                            <div className={`grid gap-3 md:grid-cols-2 ${row.pricingMode === "direct" ? "xl:grid-cols-[150px_1fr_100px_100px_130px]" : "xl:grid-cols-[130px_1fr_1fr_110px_90px_90px_120px]"}`}>
                               <AreaSelect value={row.area} selectedAreas={selectedAreas} allAreas={allAreas} allowCustom onChange={(area) => { setCabinetRows((rows) => moveItemToArea(rows, row.id, area)); setShowResult(false); }} />
-                              <Field label="高度分類">
-                                <select className="rounded-lg border border-coffee/20 px-3 py-2" value={row.type} onChange={(e) => updateCabinetType(row.id, e.target.value)}>
-                                  {row.type === "furniture" && <option value="furniture">舊版綜合櫃體</option>}
-                                  {pricing.cabinetTypes.map((type) => <option key={type.id} value={type.id}>{type.name}</option>)}
-                                </select>
-                              </Field>
+                              {row.pricingMode !== "direct" && (
+                                <Field label="高度分類">
+                                  <select className="rounded-lg border border-coffee/20 px-3 py-2" value={row.type} onChange={(e) => updateCabinetType(row.id, e.target.value)}>
+                                    {row.type === "furniture" && <option value="furniture">舊版綜合櫃體</option>}
+                                    {pricing.cabinetTypes.map((type) => <option key={type.id} value={type.id}>{type.name}</option>)}
+                                  </select>
+                                </Field>
+                              )}
                               <Field label="項目文字">
-                                <input className={fullTextInputClass} value={row.customText} onChange={(e) => updateCabinet(row.id, { customText: e.target.value })} />
+                                <input className={fullTextInputClass} value={row.customText} placeholder={row.pricingMode === "direct" ? "例如：鞋櫃透氣孔" : ""} onChange={(e) => updateCabinet(row.id, { customText: e.target.value })} />
                               </Field>
-                              <Field label="寬度公分">
-                                <input className={numberInputClass} type="number" min="0" value={row.widthCm} onChange={(e) => updateCabinet(row.id, { widthCm: editableNumber(e.target.value) })} />
-                              </Field>
+                              {row.pricingMode !== "direct" && (
+                                <Field label="寬度公分">
+                                  <input className={numberInputClass} type="number" min="0" value={row.widthCm} onChange={(e) => updateCabinet(row.id, { widthCm: editableNumber(e.target.value) })} />
+                                </Field>
+                              )}
                               <Field label="數量">
                                 <input className={numberInputClass} type="number" min="0" value={row.qty} onChange={(e) => updateCabinet(row.id, { qty: editableNumber(e.target.value) })} />
                               </Field>
@@ -1238,11 +1259,18 @@ function App() {
                                 <input className={numberInputClass} type="number" min="0" value={row.actualUnitPrice} placeholder="自行填入" onChange={(e) => updateCabinet(row.id, { actualUnitPrice: e.target.value })} />
                               </Field>
                             </div>
-                            <div className="mt-3 grid gap-2 rounded-lg bg-white px-3 py-3 text-sm text-stone-700 md:grid-cols-4">
-                              <div>寬度台尺：<b>{row.widthFeet.toFixed(2)}</b></div>
-                              <div className="md:col-span-2">參考依據：<b>{referenceText(cabinetTypeMap[row.type] || pricing.cabinetTypes[0], row.unit)}</b></div>
-                              <div>小計：<b>NT$ {moneyRange(row.subtotal)}</b></div>
-                            </div>
+                            {row.pricingMode === "direct" ? (
+                              <div className="mt-3 grid gap-2 rounded-lg bg-white px-3 py-3 text-sm text-stone-700 md:grid-cols-2">
+                                <div>計價方式：<b>數量 × 單價（不換算尺寸）</b></div>
+                                <div>小計：<b>NT$ {moneyRange(row.subtotal)}</b></div>
+                              </div>
+                            ) : (
+                              <div className="mt-3 grid gap-2 rounded-lg bg-white px-3 py-3 text-sm text-stone-700 md:grid-cols-4">
+                                <div>寬度台尺：<b>{row.widthFeet.toFixed(2)}</b></div>
+                                <div className="md:col-span-2">參考依據：<b>{referenceText(cabinetTypeMap[row.type] || pricing.cabinetTypes[0], row.unit)}</b></div>
+                                <div>小計：<b>NT$ {moneyRange(row.subtotal)}</b></div>
+                              </div>
+                            )}
                             <NoteField value={row.note} onChange={(note) => updateCabinet(row.id, { note })} />
                             <button className="mt-3 rounded-lg border border-red-200 px-3 py-2 text-sm font-bold text-red-700" type="button" onClick={() => setCabinetRows((rows) => rows.filter((item) => item.id !== row.id))}>刪除此櫃體</button>
                           </div>
