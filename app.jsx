@@ -792,7 +792,7 @@ function App() {
     ];
 
     estimateTradeGroups.forEach((tradeGroup) => {
-      tableRows.push(odsCellsRow([{ value: `工種：${tradeGroup.trade}`, span: 6, style: "section" }]));
+      tableRows.push(odsCellsRow([{ value: tradeGroup.trade, span: 6, style: "section" }]));
       tradeGroup.areas.forEach((areaGroup) => {
         areaGroup.rows.forEach((row) => {
           const item = { ...row, name: formatEstimateItemName(areaGroup.area, row.name) };
@@ -928,7 +928,7 @@ function App() {
     ];
 
     estimateTradeGroups.forEach((tradeGroup) => {
-      rows.push(`<tr>${htmlCell(`工種：${tradeGroup.trade}`, "th", 'colspan="6" class="trade-section"')}</tr>`);
+      rows.push(`<tr>${htmlCell(tradeGroup.trade, "th", 'colspan="6" class="trade-section"')}</tr>`);
       tradeGroup.areas.forEach((areaGroup) => {
         areaGroup.rows.forEach((row) => {
           const item = { ...row, name: formatEstimateItemName(areaGroup.area, row.name) };
@@ -1001,7 +1001,7 @@ function App() {
         sheet.style.cssText = "box-sizing:border-box;width:794px;min-height:1123px;padding:34px;background:#fff;color:#252525;font-family:'Microsoft JhengHei','Noto Sans TC',Arial,sans-serif;display:flex;flex-direction:column;";
 
         const tableRows = pageGroups.flatMap((tradeGroup) => {
-          const rows = [`<tr class="trade"><td colspan="6">工種：${xmlEscape(tradeGroup.trade)}</td></tr>`];
+          const rows = [`<tr class="trade"><td colspan="6">${xmlEscape(tradeGroup.trade)}</td></tr>`];
           tradeGroup.areas.forEach((areaGroup) => {
             areaGroup.rows.forEach((row) => {
               const item = { ...row, name: formatEstimateItemName(areaGroup.area, row.name) };
@@ -1122,7 +1122,7 @@ function App() {
     "各工種估價明細",
     estimateDetailHeaders.join("｜"),
     ...estimateTradeGroups.flatMap((tradeGroup) => [
-      `工種：${tradeGroup.trade}`,
+      tradeGroup.trade,
       ...tradeGroup.areas.flatMap((areaGroup) => areaGroup.rows.map((row) => {
         const item = { ...row, name: formatEstimateItemName(areaGroup.area, row.name) };
         return toEstimateDetailCells(item, `NT$ ${moneyRange(row.subtotal)}`).join("｜");
@@ -1734,7 +1734,7 @@ function App() {
                 {estimateTradeGroups.map((tradeGroup) => (
                   <React.Fragment key={tradeGroup.trade}>
                     <tr className="bg-neutral-300">
-                      <td className="px-3 py-2 font-bold text-neutral-900" colSpan="6">工種：{tradeGroup.trade}</td>
+                      <td className="px-3 py-2 font-bold text-neutral-900" colSpan="6">{tradeGroup.trade}</td>
                     </tr>
                     {tradeGroup.areas.flatMap((areaGroup, areaIndex) =>
                       areaGroup.rows.map((row, index) => (
@@ -1786,7 +1786,7 @@ function App() {
             <div className="estimate-detail-mobile md:hidden print:hidden">
               {estimateTradeGroups.map((tradeGroup) => (
                 <section key={`mobile-${tradeGroup.trade}`} className="border-b-2 border-neutral-300 last:border-b-0">
-                  <h4 className="bg-neutral-300 px-4 py-3 font-bold text-neutral-900">工種：{tradeGroup.trade}</h4>
+                  <h4 className="bg-neutral-300 px-4 py-3 font-bold text-neutral-900">{tradeGroup.trade}</h4>
                   {tradeGroup.areas.flatMap((areaGroup, areaIndex) =>
                     areaGroup.rows.map((row, index) => (
                       <article key={`${areaIndex}-${index}`} className="border-b border-neutral-300 px-4 py-3 last:border-b-0">

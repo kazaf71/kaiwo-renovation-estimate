@@ -133,6 +133,12 @@ test("cabinet editor offers a direct-price item without width conversion", () =>
   assert.match(app, /row\.pricingMode\s*===\s*"direct"/);
 });
 
+test("every estimate format shows only the trade name without a trade prefix", () => {
+  const app = fs.readFileSync("./app.jsx", "utf8");
+  assert.doesNotMatch(app, /工種：/);
+  assert.match(app, /tradeGroup\.trade/);
+});
+
 test("cabinet furniture choices are independent and include upper and lower cabinets", () => {
   const html = fs.readFileSync("./index.html", "utf8");
   const pricingJson = html.match(/<script type="application\/json" id="pricing-data">\s*([\s\S]*?)\s*<\/script>/)[1];
